@@ -12,3 +12,4 @@ serde = { version = "1", features = ["derive"] }
 rgb = { version = "0.8", features = ["serde"] }
 thiserror = "1.0"
 clap = { version = "4", features = ["derive", "cargo"] }
+sfml = "0.19"

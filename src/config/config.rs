@@ -7,6 +7,8 @@ use std::io::BufWriter;
 use std::io::prelude::*;
 use std::path::Path;
 
+use sfml::graphics::Color;
+
 #[derive(Serialize, Deserialize, Default, Clone, Debug)]
 pub struct Config {
     pub mouse: Mouse,
@@ -62,29 +64,45 @@ impl Default for Mouse {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct RGBAWrapper(RGBA8);
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Background {
-    pub color: RGBA8,
+    #[serde(flatten)]
+    pub color: RGBAWrapper,
+}
+
+impl Into<Color> for Background {
+    fn into(self) -> Color {
+        self.color.into()
+    }
+}
+
+impl Into<Color> for RGBAWrapper {
+    fn into(self) -> Color {
+        Color::rgba(self.0.r, self.0.g, self.0.b, self.0.a)
+    }
 }
 
 impl Default for Background {
     fn default() -> Self {
         Background {
-            color: RGBA8::new(255, 255, 255, 255),
+            color: RGBAWrapper(RGBA8::new(255, 255, 255, 255)),
         }
     }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Flipper {
-    pub base: RGBA8,
-    pub edge: RGBA8,
+    pub base: RGBAWrapper,
+    pub edge: RGBAWrapper,
 }
 
 impl Default for Flipper {
     fn default() -> Self {
         Flipper {
-            base: RGBA8::new(0, 0, 0, 255),
-            edge: RGBA8::new(0, 0, 0, 255),
+            base: RGBAWrapper(RGBA8::new(0, 0, 0, 255)),
+            edge: RGBAWrapper(RGBA8::new(0, 0, 0, 255)),
         }
     }
 }
