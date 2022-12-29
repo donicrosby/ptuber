@@ -1,9 +1,12 @@
 use std::path::{PathBuf, Path};
+use log::debug;
 use sfml::graphics::{Texture, Sprite, RenderWindow, RenderTarget};
 use sfml::SfBox;
-use sfml::system::Vector2i;
+use crate::{WindowFinder, get_window_finder};
+use crate::errors::Result;
 
-use super::SfmlError;
+use super::{SfmlError, SfmlResult};
+
 
 const UP_IMAGE: &'static str = "up.png";
 const DOWN_IMAGE: &'static str = "down.png";
@@ -22,8 +25,8 @@ pub(crate) struct TextureContainer {
 }
 
 impl TextureContainer {
-    pub fn new(image_path: &Path) -> Result<Self, SfmlError> {
-        let mut image_path = PathBuf::from(image_path);
+    pub fn new(image_path: &Path) -> SfmlResult<Self> {
+        let image_path = PathBuf::from(image_path);
 
         let mut up_path = image_path.clone();
         up_path.push(UP_IMAGE);
@@ -57,7 +60,7 @@ pub(crate) struct MouseTextures {
 }
 
 impl MouseTextures {
-    pub fn new(image_path: &Path) -> Result<Self, SfmlError> {
+    pub fn new(image_path: &Path) -> SfmlResult<Self> {
         let image_path = PathBuf::from(image_path);
 
         let mut mouse_path = image_path.clone();
@@ -88,13 +91,16 @@ impl MouseTextures {
 #[derive(Debug, Clone)]
 pub(crate) struct Avatar {
     textures: TextureContainer,
+    window_finder: Box<dyn WindowFinder>
 }
 
 impl Avatar {
-    pub fn new(image_path: &Path) -> Result<Self, SfmlError> {
+    pub fn new(image_path: &Path) -> Result<Self> {
         let textures = TextureContainer::new(&image_path)?;
+        let window_finder = get_window_finder()?;
         Ok(Self {
-            textures
+            textures,
+            window_finder
         })
     }
 
@@ -126,14 +132,17 @@ impl Avatar {
         Sprite::with_texture(&self.textures.mouse.mouse_lr)
     }
 
-    pub fn draw(&self, window: &mut RenderWindow) -> Result<(), SfmlError> {
+    pub fn draw(&self, window: &mut RenderWindow) -> Result<()> {
         let bg = self.background_sprite();
+        let window_dimensions = self.window_finder.get_focused_window_size()?;
+        let cursor_pos = self.window_finder.get_cursor_position();
+        let screen_size = self.window_finder.get_focused_screen_size()?;
+        debug!("Focused Window Dimensions{{ Width: {x}, Height {y} }}", x=window_dimensions.x, y=window_dimensions.y);
+        debug!("Mouse Pos{{ Width: {x}, Height {y} }}", x=cursor_pos.x, y=cursor_pos.y);
+        debug!("Screen Size{{ Width: {x}, Height {y} }}", x=screen_size.x, y=screen_size.y);
 
         window.draw(&bg);
         Ok(())
     }
-
-    fn get_mouse_pos(&self) -> Vector2i {
-        sfml::window::mouse::desktop_position()
-    }
+    
 }

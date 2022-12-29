@@ -2,19 +2,19 @@ use sfml::window::{Event, Style};
 use sfml::graphics::{RenderWindow, RenderTarget};
 use crate::{WINDOW_HEIGHT, WINDOW_WIDTH, MAX_FRAMERATE, DEFAULT_CONFIG_NAME, DEFAULT_SKIN_DIR_NAME, Config};
 use std::path::{PathBuf, MAIN_SEPARATOR, Path};
-use super::{Avatar, SfmlError};
+use super::{Avatar};
+use crate::PtuberResult;
 
 #[derive(Debug)]
 pub struct PtuberWindow {
-    pub window: RenderWindow,
+    window: RenderWindow,
     avatar: Avatar,
 }
 
 impl PtuberWindow {
-    pub fn new(skin_path: &Path)-> Result<Self, SfmlError> {
+    pub fn new(skin_path: &Path)-> PtuberResult<Self> {
         let mut window = RenderWindow::new((WINDOW_WIDTH, WINDOW_HEIGHT), "Ptuber Rigger!", Style::TITLEBAR | Style::CLOSE, &Default::default());
         window.set_framerate_limit(MAX_FRAMERATE);
-
         let avatar = Avatar::new(skin_path)?;
         Ok(Self {
             window,
@@ -22,7 +22,7 @@ impl PtuberWindow {
         })
     }
 
-    pub fn display(mut self, config: &Config) -> Result<(), SfmlError> {
+    pub fn display(mut self, config: &Config) -> PtuberResult<()> {
         while self.window.is_open() {
             while let Some(event) = self.window.poll_event() {
                 match event {

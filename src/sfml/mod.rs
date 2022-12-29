@@ -4,4 +4,4 @@ mod avatar;
 
 pub(crate) use self::avatar::Avatar;
 pub(crate) use window::PtuberWindow;
-pub(crate) use errors::SfmlError;
+pub(crate) use errors::{SfmlError, SfmlResult};
