@@ -1,19 +1,24 @@
-use rgb::RGBA8;
 use serde::{Deserialize, Serialize};
 use serde_yaml;
+use sfml::system::{Vector2, Vector2f};
+use sfml::window::VideoMode;
 use std::fs::OpenOptions;
+use std::io::prelude::*;
 use std::io::BufReader;
 use std::io::BufWriter;
-use std::io::prelude::*;
 use std::path::Path;
 
-use sfml::graphics::Color;
+use sfml::graphics::Color as SfmlColor;
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug)]
 pub struct Config {
-    pub mouse: Mouse,
-    pub background: Background,
-    pub flipper: Flipper,
+    pub window: WindowDimensions,
+    pub background: Color,
+    pub debug: bool,
+    pub anchors: Anchors,
+    pub mouse_mark: MouseMark,
+    #[serde(with = "VectorDef")]
+    pub mouse_scale: Vector2f,
 }
 
 impl Config {
@@ -27,82 +32,111 @@ impl Config {
             Ok(file) => {
                 let mut config_reader = BufReader::new(&file);
                 let mut config_string = String::new();
-                let _bytes_read= config_reader.read_to_string(&mut config_string).unwrap_or(0);
+                let _bytes_read = config_reader
+                    .read_to_string(&mut config_string)
+                    .unwrap_or(0);
                 if config_string.is_empty() {
                     let default = Self {
                         ..Default::default()
                     };
                     let mut config_writer = BufWriter::new(&file);
-                    let _bytes_written = config_writer.write(serde_yaml::to_string(&default).unwrap().as_bytes()).unwrap_or(0);
+                    let _bytes_written = config_writer
+                        .write(serde_yaml::to_string(&default).unwrap().as_bytes())
+                        .unwrap_or(0);
                     default
                 } else {
                     serde_yaml::from_str(&config_string).unwrap_or(Default::default())
                 }
             }
-            Err(_err) => {
-                Default::default()
-            }
+            Err(_err) => Default::default(),
         }
     }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct Mouse {
-    pub x_offset: u32,
-    pub y_offset: u32,
-    pub scalar: f32,
+pub struct WindowDimensions {
+    pub width: u32,
+    pub height: u32,
 }
 
-impl Default for Mouse {
+impl Into<VideoMode> for WindowDimensions {
+    fn into(self) -> VideoMode {
+        VideoMode::new(self.width, self.height, 32)
+    }
+}
+
+impl Default for WindowDimensions {
     fn default() -> Self {
-        Mouse {
-            x_offset: 10,
-            y_offset: 5,
-            scalar: 1.0,
+        Self {
+            width: 612,
+            height: 467,
+        }
+    }
+}
+#[derive(Serialize, Deserialize)]
+#[serde(remote = "Vector2")]
+struct VectorDef<S> {
+    x: S,
+    y: S,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Color {
+    pub red: u8,
+    pub green: u8,
+    pub blue: u8,
+    pub alpha: u8,
+}
+
+impl Into<SfmlColor> for Color {
+    fn into(self) -> SfmlColor {
+        SfmlColor::rgba(self.red, self.green, self.blue, self.alpha)
+    }
+}
+
+impl Default for Color {
+    fn default() -> Self {
+        Self {
+            red: 0,
+            green: 0,
+            blue: 0,
+            alpha: 255,
         }
     }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct RGBAWrapper(RGBA8);
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct Background {
-    #[serde(flatten)]
-    pub color: RGBAWrapper,
+pub struct Anchors {
+    #[serde(with = "VectorDef")]
+    pub anchor: Vector2f,
+    #[serde(with = "VectorDef")]
+    pub arm_offset: Vector2f,
 }
 
-impl Into<Color> for Background {
-    fn into(self) -> Color {
-        self.color.into()
-    }
-}
-
-impl Into<Color> for RGBAWrapper {
-    fn into(self) -> Color {
-        Color::rgba(self.0.r, self.0.g, self.0.b, self.0.a)
-    }
-}
-
-impl Default for Background {
+impl Default for Anchors {
     fn default() -> Self {
-        Background {
-            color: RGBAWrapper(RGBA8::new(255, 255, 255, 255)),
+        Self {
+            anchor: Vector2f::new(195.0, 240.0),
+            arm_offset: Vector2f::new(67.0, 0.0),
         }
     }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct Flipper {
-    pub base: RGBAWrapper,
-    pub edge: RGBAWrapper,
+pub struct MouseMark {
+    #[serde(with = "VectorDef")]
+    pub position: Vector2f,
+    #[serde(with = "VectorDef")]
+    pub size: Vector2f,
+    pub rotation: f32,
 }
 
-impl Default for Flipper {
+impl Default for MouseMark {
     fn default() -> Self {
-        Flipper {
-            base: RGBAWrapper(RGBA8::new(0, 0, 0, 255)),
-            edge: RGBAWrapper(RGBA8::new(0, 0, 0, 255)),
+        Self {
+            position: Vector2f::new(40.0, 290.0),
+            size: Vector2f::new(180.0, 90.0),
+            rotation: 15.0,
         }
     }
 }

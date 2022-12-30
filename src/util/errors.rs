@@ -9,5 +9,5 @@ pub enum WindowFinderError {
     #[error("x11rb Reply error")]
     X11Error(#[from] x11rb::errors::ReplyError),
     #[error("windows monitor invalid")]
-    WindowsMonitorInvalid
+    WindowsMonitorInvalid,
 }

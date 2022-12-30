@@ -1,116 +1,63 @@
-use std::path::{PathBuf, Path};
 use log::debug;
-use sfml::graphics::{Texture, Sprite, RenderWindow, RenderTarget, Transformable, VertexBuffer, PrimitiveType, VertexBufferUsage, Vertex};
-use sfml::SfBox;
+use sfml::graphics::{
+    CircleShape, Color, RectangleShape, RenderTarget, RenderWindow, Shape, Sprite, Transform,
+    Transformable,
+};
 use sfml::system::Vector2f;
-use sfml::graphics::Color;
-use crate::{WindowFinder, get_window_finder, util};
+use std::path::Path;
+
+use super::window::MouseState;
+use super::{LeftArmState, TextureContainer};
 use crate::errors::Result;
 use crate::Config;
-use super::{SfmlError, SfmlResult};
+use crate::{get_window_finder, WindowFinder};
 
-
-const UP_IMAGE: &'static str = "up.png";
-const DOWN_IMAGE: &'static str = "down.png";
-const BACKGROUND_IMAGE: &'static str = "bg.png";
-const MOUSE: &'static str = "mouse.png";
-const MOUSE_L: &'static str = "mousel.png";
-const MOUSE_R: &'static str = "mouser.png";
-const MOUSE_LR: &'static str = "mouselr.png";
-
-const PAW_START_POINT: Vector2f = Vector2f::new(211.0, 159.0);
-const PAW_END_POINT: Vector2f = Vector2f::new(258.0, 228.0);
-const OOF: usize = 6;
-const PUSH: usize = 20;
-const DX: f32 = -38.0;
-const DY: f32 = -50.0;
-const ITER: usize = 25;
+const TO_DEGREE: f32 = 180.0 / std::f32::consts::PI;
 
 #[derive(Debug, Clone)]
-pub(crate) struct TextureContainer {
-    pub up: SfBox<Texture>,
-    pub down: SfBox<Texture>,
-    pub background: SfBox<Texture>,
-    pub mouse: MouseTextures
-}
-
-impl TextureContainer {
-    pub fn new(image_path: &Path) -> SfmlResult<Self> {
-        let image_path = PathBuf::from(image_path);
-
-        let mut up_path = image_path.clone();
-        up_path.push(UP_IMAGE);
-        let up = Texture::from_file(&up_path.to_str().ok_or(SfmlError::PathConversion)?)?;
-        
-        let mut down_path = image_path.clone();
-        down_path.push(DOWN_IMAGE);
-        let down = Texture::from_file(&down_path.to_str().ok_or(SfmlError::PathConversion)?)?;
-
-        let mut background_path = image_path.clone();
-        background_path.push(BACKGROUND_IMAGE);
-        let background = Texture::from_file(&background_path.to_str().ok_or(SfmlError::PathConversion)?)?;
-
-        let mouse = MouseTextures::new(&image_path)?;
-
-        Ok(Self {
-            up,
-            down,
-            background,
-            mouse
-        })
-    }
-}
-
-#[derive(Debug, Clone)]
-pub(crate) struct MouseTextures {
-    pub mouse: SfBox<Texture>,
-    pub mouse_l: SfBox<Texture>,
-    pub mouse_r: SfBox<Texture>,
-    pub mouse_lr: SfBox<Texture>,
-}
-
-impl MouseTextures {
-    pub fn new(image_path: &Path) -> SfmlResult<Self> {
-        let image_path = PathBuf::from(image_path);
-
-        let mut mouse_path = image_path.clone();
-        mouse_path.push(MOUSE);
-        let mouse = Texture::from_file(&mouse_path.to_str().ok_or(SfmlError::PathConversion)?)?;
-        
-        let mut mouse_l_path = image_path.clone();
-        mouse_l_path.push(MOUSE_L);
-        let mouse_l = Texture::from_file(&mouse_l_path.to_str().ok_or(SfmlError::PathConversion)?)?;
-
-        let mut mouse_r_path = image_path.clone();
-        mouse_r_path.push(MOUSE_R);
-        let mouse_r = Texture::from_file(&mouse_r_path.to_str().ok_or(SfmlError::PathConversion)?)?;
-
-        let mut mouse_lr_path = image_path.clone();
-        mouse_lr_path.push(MOUSE_LR);
-        let mouse_lr = Texture::from_file(&mouse_lr_path.to_str().ok_or(SfmlError::PathConversion)?)?;
-
-        Ok(Self {
-            mouse,
-            mouse_l,
-            mouse_r,
-            mouse_lr
-        })
-    }
-}
-
-#[derive(Debug, Clone)]
-pub(crate) struct Avatar {
+pub(crate) struct Avatar<'a> {
     textures: TextureContainer,
-    window_finder: Box<dyn WindowFinder>
+    window_finder: Box<dyn WindowFinder>,
+    debug_shapes: DebugShapes<'a>,
+    config: Config,
 }
 
-impl Avatar {
-    pub fn new(image_path: &Path) -> Result<Self> {
+#[derive(Debug, Clone, Default)]
+struct DebugShapes<'a> {
+    pub anchor_mark: CircleShape<'a>,
+    pub hand_mark: CircleShape<'a>,
+    pub mouse_mark: RectangleShape<'a>,
+}
+
+impl<'a> DebugShapes<'a> {
+    pub fn setup_debug(&mut self, config: &Config) {
+        self.anchor_mark.set_position(config.anchors.anchor);
+        self.anchor_mark.set_radius(5.0);
+        self.anchor_mark.set_fill_color(Color::BLUE);
+
+        self.hand_mark.set_radius(5.0);
+        self.hand_mark.set_fill_color(Color::RED);
+
+        self.mouse_mark.set_fill_color(Color::TRANSPARENT);
+        self.mouse_mark.set_outline_color(Color::YELLOW);
+        self.mouse_mark.set_outline_thickness(2.0);
+        self.mouse_mark.set_position(config.mouse_mark.position);
+        self.mouse_mark.set_size(config.mouse_mark.size);
+        self.mouse_mark.set_rotation(config.mouse_mark.rotation);
+    }
+}
+
+impl<'a> Avatar<'a> {
+    pub fn new(image_path: &Path, config: Config) -> Result<Self> {
         let textures = TextureContainer::new(&image_path)?;
         let window_finder = get_window_finder()?;
+        let mut debug_shapes: DebugShapes = Default::default();
+        debug_shapes.setup_debug(&config);
         Ok(Self {
             textures,
-            window_finder
+            window_finder,
+            debug_shapes,
+            config,
         })
     }
 
@@ -118,12 +65,24 @@ impl Avatar {
         Sprite::with_texture(&self.textures.background)
     }
 
-    pub fn up_sprite(&self) -> Sprite {
-        Sprite::with_texture(&self.textures.up)
+    pub fn right_arm_sprite(&self) -> Sprite {
+        Sprite::with_texture(&self.textures.arms.right)
     }
 
-    pub fn down_sprite(&self) -> Sprite {
-        Sprite::with_texture(&self.textures.down)
+    pub fn left_arm_left_sprite(&self) -> Sprite {
+        Sprite::with_texture(&self.textures.arms.left.left)
+    }
+
+    pub fn left_arm_right_sprite(&self) -> Sprite {
+        Sprite::with_texture(&self.textures.arms.left.right)
+    }
+
+    pub fn left_arm_up_sprite(&self) -> Sprite {
+        Sprite::with_texture(&self.textures.arms.left.up)
+    }
+
+    pub fn avatar_sprite(&self) -> Sprite {
+        Sprite::with_texture(&self.textures.avatar)
     }
 
     pub fn mouse_sprite(&self) -> Sprite {
@@ -142,111 +101,104 @@ impl Avatar {
         Sprite::with_texture(&self.textures.mouse.mouse_lr)
     }
 
-    /// Returns PSS Vec, AB Vec, and Mouse Pos Vec
-    fn get_pss(&self, mouse_pos: Vector2f) -> (Vec<f32>, Vector2f, Vector2f) {
-        let mut pss = vec![PAW_START_POINT.x, PAW_START_POINT.y];
-        let dist = (PAW_START_POINT.x - mouse_pos.x).hypot(PAW_START_POINT.y - mouse_pos.y);
-        debug!("First dist: {}", dist);
-        let ctr_left = Vector2f::new(PAW_START_POINT.x - (0.7237 * (dist/2.0)), PAW_START_POINT.y + (0.69 * (dist/2.0)));
-        debug!("Center Left: {:?}", ctr_left);
-        let bez = vec![PAW_START_POINT.x, PAW_START_POINT.y, ctr_left.x, ctr_left.y, mouse_pos.x, mouse_pos.y];
-        let mut p;
-        for i in 0..OOF {
-            p = util::bezier(1.0 * (i as f32) / (OOF as f32), &bez, bez.len());
-            pss.push(p.x);
-            pss.push(p.y);
+    fn setup_device(&self, mouse_state: &MouseState) -> Sprite<'_> {
+        let mut device = match mouse_state {
+            MouseState::None => self.mouse_sprite(),
+            MouseState::Left => self.mouse_l_sprite(),
+            MouseState::Right => self.mouse_r_sprite(),
+            MouseState::Both => self.mouse_lr_sprite()
         };
-        pss.push(mouse_pos.x);
-        pss.push(mouse_pos.y);
+        let device_scale = self.config.mouse_scale;
+        device.set_scale(device_scale);
+        let bounds = device.local_bounds();
+        device.set_origin(Vector2f::new(bounds.width / 2.0, bounds.height / 2.0));
 
-        let mut ab = Vector2f::new(mouse_pos.y - ctr_left.y,ctr_left.x - mouse_pos.x);
-        debug!("AB Vec: {:?}", ab);
-        let le = ab.x.hypot(ab.y);
-
-        ab.x = mouse_pos.x + ab.x / le * 60.0;
-        ab.y = mouse_pos.y + ab.y / le * 60.0;
-
-        debug!("AB Vec: {:?}, LE: {}", ab, le);
-
-        let dist = (PAW_END_POINT.x - ab.x).hypot(PAW_END_POINT.y - ab.y);
-        let ctr_right = Vector2f::new(PAW_END_POINT.x - 0.6 * dist / 2.0, PAW_END_POINT.y + 0.8 * dist / 2.0);
-        
-        let mut st = Vector2f::new(mouse_pos.x - ctr_left.x, mouse_pos.y - ctr_left.y);
-        let le = st.x.hypot(st.y);
-        st.x *= (PUSH as f32)/le;
-        st.y *= (PUSH as f32)/le;
-        let st2 = Vector2f::new(ab.x - ctr_right.x, ab.y - ctr_right.y);
-
-        let bez = vec![mouse_pos.x, mouse_pos.y, mouse_pos.x + st.x, mouse_pos.y + st.y, ab.x + st2.x, ab.y + st.y, ab.x, ab.y];
-        for i in 0..OOF {
-            p = util::bezier(1.0 * (i as f32) / (OOF as f32), &bez, bez.len());
-            pss.push(p.x);
-            pss.push(p.y);
-        }
-        pss.push(ab.x);
-        pss.push(ab.y);
-
-        let bez = vec![PAW_END_POINT.x, PAW_END_POINT.y, ctr_right.x, ctr_right.y, ab.x, ab.y];
-        for i in (0..OOF).rev() {
-            p = util::bezier(1.0 * (i as f32) / (OOF as f32), &bez, bez.len());
-            pss.push(p.x);
-            pss.push(p.y);
-        }
-        pss.push(PAW_END_POINT.x);
-        pss.push(PAW_END_POINT.y);
-
-        (pss, ab, mouse_pos)
+        device
     }
 
-    /// Returns PSS2 Vec
-    fn get_pss2(&self, pss: Vec<f32>) -> Vec<f32> {
-        let mut pss2 = vec![pss[0] + DX, pss[1] + DY];
-        debug!("PSS LEN: {}", pss.len());
-        let mut p;
-        for i in 0..ITER {
-            p = util::bezier(1.0 * (i as f32) / (ITER as f32), &pss, 38); //weird 38 for some reason
-            pss2.push(p.x);
-            pss2.push(p.y);
-        }
-        pss2.push(pss[36] + DX);
-        pss2.push(pss[37] + DY);
-        pss2
-    }
-
-    fn get_fill(&self, pss: Vec<f32>, color: Color) -> VertexBuffer {
-        let mut fill = VertexBuffer::new(PrimitiveType::TRIANGLE_STRIP, 26, VertexBufferUsage::DYNAMIC);
-        let mut vert_vec = Vec::new();
-        for i in 0..(pss.len()/2) {
-            let vert = Vertex::with_pos_color(Vector2f::new(pss[i], pss[i+1]), color.clone());
-            let vert2 = Vertex::with_pos_color(Vector2f::new(pss[52 - i - 2], pss[52 - i - 1]), color.clone());
-            vert_vec.push(vert);
-            vert_vec.push(vert2);
-        }
-        fill.update(&vert_vec, 0);
-        fill
-    }
-
-    pub fn draw(&self, window: &mut RenderWindow, config: &Config) -> Result<()> {
-        let bg = self.background_sprite();
+    fn draw_arm(&mut self, window: &mut RenderWindow, mouse_state: &MouseState) -> Result<()> {
         let mouse_pos = self.window_finder.get_cursor_position()?;
-        debug!("Mouse Pos: {:?}", mouse_pos);
-        let (pss, ab, mouse_pos) = self.get_pss(mouse_pos);
-        debug!("AB Vec: {:?}", ab);
-        let mpos = Vector2f::new((ab.x + mouse_pos.x)/ 2.0 - 52.0 - 15.0, (ab.y + mouse_pos.y) - 34.0 + 5.0);
-        let pss2 = self.get_pss2(pss);
+        debug!("Mouse Pos{{ X: {}, Y: {} }}", mouse_pos.x, mouse_pos.y);
 
-        let mut device = self.mouse_sprite();
-        let dev_pos = Vector2f::new(mpos.x, mpos.y);
-        debug!("Mouse Pos Final: {:?}", dev_pos);
-        device.set_position(dev_pos);
-        device.set_scale(Vector2f::new(1.0, 1.0));
+        let mut transform: Transform = Default::default();
 
-        let fill = self.get_fill(pss2, config.flipper.base.clone().into());
+        let mouse_mark_pos = self.debug_shapes.mouse_mark.position();
+        let mouse_mark_size = self.debug_shapes.mouse_mark.size();
 
-        window.draw(&bg);
+        transform.translate(mouse_mark_pos.x, mouse_mark_pos.y);
+        transform.rotate(self.config.mouse_mark.rotation);
+        transform.scale(mouse_mark_size.x, mouse_mark_size.y);
+
+        let hand_pos = transform.transform_point(mouse_pos.clone());
+        debug!("Hand Pos{{ X: {}, Y: {} }}", hand_pos.x, hand_pos.y);
+
+        self.debug_shapes.hand_mark.set_position(hand_pos);
+
+        let arm_origin = self.config.anchors.arm_offset;
+        let mut arm = self.right_arm_sprite();
+        arm.set_origin(arm_origin);
+        arm.set_position(self.config.anchors.anchor);
+
+        let displacement = hand_pos - self.debug_shapes.anchor_mark.position();
+        let dist = displacement.x.hypot(displacement.y);
+        let arm_bounds = arm.local_bounds().clone();
+        let scale = dist / arm_bounds.height;
+
+        arm.set_scale((1.0, scale));
+
+        let alpha = (-displacement.x / dist).asin();
+        let deg = alpha * TO_DEGREE;
+
+        arm.set_rotation(deg);
+        let mut device = self.setup_device(mouse_state);
+        device.set_position(hand_pos);
         window.draw(&device);
-        window.draw(&fill);
+        window.draw(&arm);
+
         Ok(())
     }
-    
+
+    fn draw_debug(&mut self, window: &mut RenderWindow) {
+        window.draw(&self.debug_shapes.hand_mark);
+        window.draw(&self.debug_shapes.anchor_mark);
+        window.draw(&self.debug_shapes.mouse_mark);
+    }
+
+    fn draw_left_arm(&mut self, window: &mut RenderWindow, left_arm_state: &LeftArmState) {
+        let sprite;
+        match left_arm_state {
+            LeftArmState::Up => {
+                sprite = self.left_arm_up_sprite();
+            }
+            LeftArmState::Left => {
+                sprite = self.left_arm_left_sprite();
+            }
+            LeftArmState::Right => {
+                sprite = self.left_arm_right_sprite();
+            }
+        }
+        window.draw(&sprite)
+    }
+
+    pub fn draw(&mut self, window: &mut RenderWindow, left_arm_state: &LeftArmState, mouse_state: &MouseState) -> Result<()> {
+        {
+            let bg = self.background_sprite();
+            window.draw(&bg);
+        }
+
+        self.draw_arm(window, mouse_state)?;
+
+        {
+            let avatar = self.avatar_sprite();
+            window.draw(&avatar);
+        }
+
+        self.draw_left_arm(window, left_arm_state);
+
+        if self.config.debug {
+            self.draw_debug(window);
+        }
+
+        Ok(())
+    }
 }

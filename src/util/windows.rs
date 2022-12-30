@@ -1,12 +1,9 @@
-use windows::Win32::UI::WindowsAndMessaging::{GetForegroundWindow, GetWindowRect};
-use windows::Win32::Foundation::{HWND};
+use sfml::system::Vector2i;
+use windows::Win32::Foundation::HWND;
 use windows::Win32::Graphics::Gdi::{
-    MonitorFromWindow,
-    MONITOR_DEFAULTTONEAREST,
-    HMONITOR,
-    MONITORINFO, GetMonitorInfoW
+    GetMonitorInfoW, MonitorFromWindow, HMONITOR, MONITORINFO, MONITOR_DEFAULTTONEAREST,
 };
-use sfml::system::{Vector2i};
+use windows::Win32::UI::WindowsAndMessaging::{GetForegroundWindow, GetWindowRect};
 
 use super::WindowFinder;
 use super::WindowFinderError;
@@ -16,14 +13,14 @@ pub struct WindowsWindowFinder {}
 
 impl WindowsWindowFinder {
     pub fn new() -> Result<Self, WindowFinderError> {
-        Ok(Self{})
+        Ok(Self {})
     }
 
     fn get_focused_window(&self) -> HWND {
-       let window;
-       unsafe {
-        window = GetForegroundWindow();
-       }
+        let window;
+        unsafe {
+            window = GetForegroundWindow();
+        }
         window
     }
 
@@ -48,7 +45,10 @@ impl WindowFinder for WindowsWindowFinder {
             GetWindowRect(window, &mut rect);
         }
 
-        Ok(Vector2i::new(rect.right - rect.left,rect.bottom - rect.top))
+        Ok(Vector2i::new(
+            rect.right - rect.left,
+            rect.bottom - rect.top,
+        ))
     }
 
     fn get_focused_screen_size(&self) -> Result<Vector2i, WindowFinderError> {
@@ -59,6 +59,9 @@ impl WindowFinder for WindowsWindowFinder {
         unsafe {
             GetMonitorInfoW(monitor, &mut info);
         }
-        Ok(Vector2i::new(info.rcMonitor.right - info.rcMonitor.left, info.rcMonitor.bottom - info.rcMonitor.top))
+        Ok(Vector2i::new(
+            info.rcMonitor.right - info.rcMonitor.left,
+            info.rcMonitor.bottom - info.rcMonitor.top,
+        ))
     }
 }

@@ -1,7 +1,7 @@
-use thiserror::Error;
-use sfml::ResourceLoadError;
-use core::result;
 use crate::WindowFinderError;
+use core::result;
+use sfml::ResourceLoadError;
+use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum SfmlError {
@@ -10,8 +10,7 @@ pub enum SfmlError {
     #[error("image path conversion to str")]
     PathConversion,
     #[error("window finder error")]
-    WindowFinder(#[from] WindowFinderError)
+    WindowFinder(#[from] WindowFinderError),
 }
-
 
 pub type SfmlResult<T> = result::Result<T, SfmlError>;

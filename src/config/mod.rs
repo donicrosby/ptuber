@@ -1,5 +1,5 @@
 mod config;
 mod errors;
 
-pub use self::config::{Background, Config, Flipper, Mouse};
+pub use self::config::{Anchors, Color, Config, WindowDimensions};
 pub(crate) use self::errors::ConfigError;
