@@ -54,8 +54,10 @@ impl WindowFinder for WindowsWindowFinder {
     fn get_focused_screen_size(&self) -> Result<Vector2i, WindowFinderError> {
         let window = self.get_focused_window();
         let monitor = self.get_monitor(window)?;
-        let mut info: MONITORINFO = Default::default();
-        info.cbSize = std::mem::size_of::<MONITORINFO>() as u32;
+        let mut info = MONITORINFO {
+            cbSize: std::mem::size_of::<MONITORINFO>() as u32,
+            ..Default::default()
+        };
         unsafe {
             GetMonitorInfoW(monitor, &mut info);
         }

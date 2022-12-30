@@ -3,21 +3,21 @@ use sfml::graphics::Texture;
 use sfml::SfBox;
 use std::path::{Path, PathBuf};
 
-const RIGHT_ARM_IMAGE: &'static str = "arm.png";
-const LEFT_ARM_LEFT_IMAGE: &'static str = "left.png";
-const LEFT_ARM_RIGHT_IMAGE: &'static str = "right.png";
-const LEFT_ARM_UP_IMAGE: &'static str = "up.png";
-const BACKGROUND_IMAGE: &'static str = "background.png";
-const AVATAR_IMAGE: &'static str = "avatar.png";
-const MOUSE: &'static str = "mouse.png";
-const MOUSE_L: &'static str = "mousel.png";
-const MOUSE_R: &'static str = "mouser.png";
-const MOUSE_LR: &'static str = "mouselr.png";
+const RIGHT_ARM_IMAGE: &str = "arm.png";
+const LEFT_ARM_LEFT_IMAGE: &str = "left.png";
+const LEFT_ARM_RIGHT_IMAGE: &str = "right.png";
+const LEFT_ARM_UP_IMAGE: &str = "up.png";
+const BACKGROUND_IMAGE: &str = "background.png";
+const AVATAR_IMAGE: &str = "avatar.png";
+const MOUSE: &str = "mouse.png";
+const MOUSE_L: &str = "mousel.png";
+const MOUSE_R: &str = "mouser.png";
+const MOUSE_LR: &str = "mouselr.png";
 
 fn load_texture_from_file(images_path: &Path, image: &str) -> SfmlResult<SfBox<Texture>> {
     let mut image_path = PathBuf::from(images_path);
     image_path.push(image);
-    let texture = Texture::from_file(&image_path.to_str().ok_or(SfmlError::PathConversion)?)?;
+    let texture = Texture::from_file(image_path.to_str().ok_or(SfmlError::PathConversion)?)?;
     Ok(texture)
 }
 

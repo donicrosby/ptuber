@@ -45,7 +45,7 @@ impl Config {
                         .unwrap_or(0);
                     default
                 } else {
-                    serde_yaml::from_str(&config_string).unwrap_or(Default::default())
+                    serde_yaml::from_str(&config_string).unwrap_or_default()
                 }
             }
             Err(_err) => Default::default(),
@@ -59,9 +59,9 @@ pub struct WindowDimensions {
     pub height: u32,
 }
 
-impl Into<VideoMode> for WindowDimensions {
-    fn into(self) -> VideoMode {
-        VideoMode::new(self.width, self.height, 32)
+impl From<WindowDimensions> for VideoMode {
+    fn from(value: WindowDimensions) -> Self {
+        VideoMode::new(value.width, value.height, 32)
     }
 }
 
@@ -88,9 +88,9 @@ pub struct Color {
     pub alpha: u8,
 }
 
-impl Into<SfmlColor> for Color {
-    fn into(self) -> SfmlColor {
-        SfmlColor::rgba(self.red, self.green, self.blue, self.alpha)
+impl From<Color> for SfmlColor {
+    fn from(value: Color) -> Self {
+        SfmlColor::rgba(value.red, value.green, value.blue, value.alpha)
     }
 }
 

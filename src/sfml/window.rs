@@ -27,7 +27,7 @@ pub enum MouseState {
     None,
     Left,
     Right,
-    Both
+    Both,
 }
 
 // fn is_left_key(key: Key) -> bool {
@@ -73,7 +73,7 @@ impl<'a> PtuberWindow<'a> {
                         self.window.close();
                         return Ok(());
                     }
-                    Event::KeyPressed{..} => {
+                    Event::KeyPressed { .. } => {
                         keys_pressed += 1;
                         match left_arm_state {
                             LeftArmState::Left => {
@@ -88,7 +88,7 @@ impl<'a> PtuberWindow<'a> {
                             },
                         }
                     }
-                    Event::KeyReleased {..} => {
+                    Event::KeyReleased { .. } => {
                         if keys_pressed <= 0 {
                             keys_pressed = 0
                         } else {
@@ -114,75 +114,56 @@ impl<'a> PtuberWindow<'a> {
                                 LastArmState::Right => left_arm_state = LeftArmState::Left,
                             },
                         }
-                    },
-                    Event::MouseButtonPressed { button, .. } => {
-                        match button {
-                            Button::Left => {
-                                match mouse_state {
-                                    MouseState::Left | MouseState::None => {
-                                        mouse_state = MouseState::Left;
-                                    },
-                                    MouseState::Right | MouseState::Both => {
-                                        mouse_state = MouseState::Both
-                                    }
-                                }
-                            },
-                            Button::Right => {
-                                match mouse_state {
-                                    MouseState::Right | MouseState::None => {
-                                        mouse_state = MouseState::Right;
-                                    },
-                                    MouseState::Left | MouseState::Both => {
-                                        mouse_state = MouseState::Both
-                                    }
-                                }
-                            },
-                            _ => {}
-                        }
-                    },
-                    Event::MouseButtonReleased { button, .. } => {
-                        match button {
-                            Button::Left => {
-                                match mouse_state {
-                                    MouseState::Left  => {
-                                        mouse_state = MouseState::None;
-                                    },
-                                     MouseState::Both => {
-                                        mouse_state = MouseState::Right;
-                                    },
-                                    MouseState::None | MouseState::Right => {}
-                                }
-                            },
-                            Button::Right => {
-                                match mouse_state {
-                                    MouseState::Right  => {
-                                        mouse_state = MouseState::None;
-                                    },
-                                     MouseState::Both => {
-                                        mouse_state = MouseState::Left;
-                                    },
-                                    MouseState::None | MouseState::Left => {}
-                                }
-                            },
-                            _ => {}
-                        }
                     }
+                    Event::MouseButtonPressed { button, .. } => match button {
+                        Button::Left => match mouse_state {
+                            MouseState::Left | MouseState::None => {
+                                mouse_state = MouseState::Left;
+                            }
+                            MouseState::Right | MouseState::Both => mouse_state = MouseState::Both,
+                        },
+                        Button::Right => match mouse_state {
+                            MouseState::Right | MouseState::None => {
+                                mouse_state = MouseState::Right;
+                            }
+                            MouseState::Left | MouseState::Both => mouse_state = MouseState::Both,
+                        },
+                        _ => {}
+                    },
+                    Event::MouseButtonReleased { button, .. } => match button {
+                        Button::Left => match mouse_state {
+                            MouseState::Left => {
+                                mouse_state = MouseState::None;
+                            }
+                            MouseState::Both => {
+                                mouse_state = MouseState::Right;
+                            }
+                            MouseState::None | MouseState::Right => {}
+                        },
+                        Button::Right => match mouse_state {
+                            MouseState::Right => {
+                                mouse_state = MouseState::None;
+                            }
+                            MouseState::Both => {
+                                mouse_state = MouseState::Left;
+                            }
+                            MouseState::None | MouseState::Left => {}
+                        },
+                        _ => {}
+                    },
                     _ => {}
                 }
             }
 
             self.window.clear(config.background.clone().into());
-            self.avatar.draw(&mut self.window, &left_arm_state, &mouse_state)?;
+            self.avatar
+                .draw(&mut self.window, &left_arm_state, &mouse_state)?;
 
             self.window.display();
 
             match last_state {
-                LastArmState::Left => {
-                    last_state = LastArmState::Right
-                },
-                LastArmState::Right => {
-                    last_state = LastArmState::Left
-                }
+                LastArmState::Left => last_state = LastArmState::Right,
+                LastArmState::Right => last_state = LastArmState::Left,
             }
         }
         Ok(())

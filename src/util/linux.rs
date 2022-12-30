@@ -23,7 +23,7 @@ impl LinuxWindowFinder {
 
     fn get_focused_window(&self) -> Result<Window, WindowFinderError> {
         let input_focus = self.connection.get_input_focus()?.reply()?;
-        Ok(input_focus.focus.into())
+        Ok(input_focus.focus)
     }
 }
 

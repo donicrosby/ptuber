@@ -25,8 +25,8 @@ pub struct PTuber<'a> {
 impl<'a> PTuber<'a> {
     pub fn new() -> PtuberResult<Self> {
         let args = Self::parse_args();
-        debug!("Skin path: {:?}", args.clone().skin_dir());
-        debug!("Config path: {:?}", args.clone().config_path());
+        debug!("Skin path: {:?}", args.skin_dir());
+        debug!("Config path: {:?}", args.config_path());
         let config = Config::new(&args.config_path());
         let display = PtuberWindow::new(&args.skin_dir(), config.clone())?;
         Ok(Self { config, display })

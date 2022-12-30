@@ -49,7 +49,7 @@ impl<'a> DebugShapes<'a> {
 
 impl<'a> Avatar<'a> {
     pub fn new(image_path: &Path, config: Config) -> Result<Self> {
-        let textures = TextureContainer::new(&image_path)?;
+        let textures = TextureContainer::new(image_path)?;
         let window_finder = get_window_finder()?;
         let mut debug_shapes: DebugShapes = Default::default();
         debug_shapes.setup_debug(&config);
@@ -106,7 +106,7 @@ impl<'a> Avatar<'a> {
             MouseState::None => self.mouse_sprite(),
             MouseState::Left => self.mouse_l_sprite(),
             MouseState::Right => self.mouse_r_sprite(),
-            MouseState::Both => self.mouse_lr_sprite()
+            MouseState::Both => self.mouse_lr_sprite(),
         };
         let device_scale = self.config.mouse_scale;
         device.set_scale(device_scale);
@@ -129,7 +129,7 @@ impl<'a> Avatar<'a> {
         transform.rotate(self.config.mouse_mark.rotation);
         transform.scale(mouse_mark_size.x, mouse_mark_size.y);
 
-        let hand_pos = transform.transform_point(mouse_pos.clone());
+        let hand_pos = transform.transform_point(mouse_pos);
         debug!("Hand Pos{{ X: {}, Y: {} }}", hand_pos.x, hand_pos.y);
 
         self.debug_shapes.hand_mark.set_position(hand_pos);
@@ -141,7 +141,7 @@ impl<'a> Avatar<'a> {
 
         let displacement = hand_pos - self.debug_shapes.anchor_mark.position();
         let dist = displacement.x.hypot(displacement.y);
-        let arm_bounds = arm.local_bounds().clone();
+        let arm_bounds = arm.local_bounds();
         let scale = dist / arm_bounds.height;
 
         arm.set_scale((1.0, scale));
@@ -165,22 +165,20 @@ impl<'a> Avatar<'a> {
     }
 
     fn draw_left_arm(&mut self, window: &mut RenderWindow, left_arm_state: &LeftArmState) {
-        let sprite;
-        match left_arm_state {
-            LeftArmState::Up => {
-                sprite = self.left_arm_up_sprite();
-            }
-            LeftArmState::Left => {
-                sprite = self.left_arm_left_sprite();
-            }
-            LeftArmState::Right => {
-                sprite = self.left_arm_right_sprite();
-            }
-        }
+        let sprite = match left_arm_state {
+            LeftArmState::Up => self.left_arm_up_sprite(),
+            LeftArmState::Left => self.left_arm_left_sprite(),
+            LeftArmState::Right => self.left_arm_right_sprite(),
+        };
         window.draw(&sprite)
     }
 
-    pub fn draw(&mut self, window: &mut RenderWindow, left_arm_state: &LeftArmState, mouse_state: &MouseState) -> Result<()> {
+    pub fn draw(
+        &mut self,
+        window: &mut RenderWindow,
+        left_arm_state: &LeftArmState,
+        mouse_state: &MouseState,
+    ) -> Result<()> {
         {
             let bg = self.background_sprite();
             window.draw(&bg);

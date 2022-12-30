@@ -1,4 +1,3 @@
-use env_logger;
 use log::error;
 use ptuber::{PTuber, PtuberResult as Result};
 

@@ -1,8 +1,8 @@
 use clap::{Parser, ValueHint};
 use std::path::{PathBuf, MAIN_SEPARATOR};
 
-pub const DEFAULT_SKIN_DIR_NAME: &'static str = "skin";
-pub const DEFAULT_CONFIG_NAME: &'static str = "config.yaml";
+pub const DEFAULT_SKIN_DIR_NAME: &str = "skin";
+pub const DEFAULT_CONFIG_NAME: &str = "config.yaml";
 
 /// Ptuber vtuber simple rigger
 #[derive(Parser, Debug, Clone)]
