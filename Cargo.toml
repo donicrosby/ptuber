@@ -12,7 +12,8 @@ serde = { version = "1", features = ["derive"] }
 rgb = { version = "0.8", features = ["serde"] }
 thiserror = "1.0"
 clap = { version = "4", features = ["derive", "cargo"] }
-sfml = "0.19"
+# sfml = { path="./rust-sfml" }
+sfml = {git="https://github.com/donicrosby/rust-sfml.git", branch="fix/build-rs-uses-default-toolchain"}
 env_logger = "0.10"
 log = "0.4"
 #[cfg(target_os="linux")]
