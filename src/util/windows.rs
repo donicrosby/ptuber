@@ -51,10 +51,6 @@ impl WindowFinder for WindowsWindowFinder {
         Ok(Vector2i::new(rect.right - rect.left,rect.bottom - rect.top))
     }
 
-    fn get_cursor_position(&self) -> Vector2i {
-        sfml::window::mouse::desktop_position()
-    }
-
     fn get_focused_screen_size(&self) -> Result<Vector2i, WindowFinderError> {
         let window = self.get_focused_window();
         let monitor = self.get_monitor(window)?;

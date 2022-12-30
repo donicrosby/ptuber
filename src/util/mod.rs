@@ -16,11 +16,18 @@ use self::windows::WindowsWindowFinder;
 use cfg_if::cfg_if;
 use core::fmt::Debug;
 use dyn_clone::{DynClone, clone_trait_object};
+use sfml::system::{Vector2i, Vector2f};
+use log::debug;
 
-use sfml::system::{Vector2i};
 pub trait WindowFinder: Debug + DynClone {
     fn get_focused_window_size(&self) -> Result<Vector2i, WindowFinderError>;
-    fn get_cursor_position(&self) -> Vector2i;
+    fn get_cursor_position(&self) -> Result<Vector2f, WindowFinderError> {
+        let curs_pos = sfml::window::mouse::desktop_position();
+        let screen_size = self.get_focused_screen_size()?;
+        let x = curs_pos.x as f32/screen_size.x as f32;
+        let y = curs_pos.y as f32 / screen_size.y as f32;
+        Ok(Vector2f::new(x, y))
+    }
     fn get_focused_screen_size(&self) -> Result<Vector2i, WindowFinderError>;
 }
 

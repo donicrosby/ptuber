@@ -37,10 +37,6 @@ impl WindowFinder for LinuxWindowFinder {
         Ok(Vector2i::new(geometry.width.into(), geometry.height.into()))
     }
 
-    fn get_cursor_position(&self) -> Vector2i {
-        sfml::window::mouse::desktop_position()
-    }
-
     fn get_focused_screen_size(&self) -> Result<Vector2i, WindowFinderError> {
         let input_focus = self.get_focused_window()?;
         debug!("Input Focus Window: {}", input_focus);

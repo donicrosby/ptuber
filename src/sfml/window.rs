@@ -37,7 +37,7 @@ impl PtuberWindow {
             }
 
             self.window.clear(config.background.clone().into());
-            self.avatar.draw(&mut self.window)?;
+            self.avatar.draw(&mut self.window, &config)?;
 
             self.window.display();
         }
