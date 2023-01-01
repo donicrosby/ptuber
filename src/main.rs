@@ -2,11 +2,8 @@ use log::error;
 use ptuber::{PTuber, PtuberResult as Result};
 
 fn main() -> Result<()> {
-    cfg_if::cfg_if! {
-        if #[cfg(unix)] {
-            env_logger::init();
-        }
-    }
+
+    env_logger::init();
     
     match PTuber::new() {
         Ok(ptuber) => {
