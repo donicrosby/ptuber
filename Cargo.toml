@@ -13,11 +13,14 @@ rgb = { version = "0.8", features = ["serde"] }
 thiserror = "1.0"
 clap = { version = "4", features = ["derive", "cargo"] }
 # sfml = { path="./rust-sfml" }
-sfml = {git="https://github.com/donicrosby/rust-sfml.git", branch="fix/build-rs-uses-default-toolchain"}
+sfml = {git="https://github.com/donicrosby/rust-sfml.git", branch="static-build", features=["serde"]}
 log = "0.4"
 cfg-if = "1"
 dyn-clone = "1"
 env_logger = "0.10"
+rdev = "0.5"
+
+
 
 [target.'cfg(all(unix, target_os = "linux"))'.dependencies]
 x11rb = { version = "0.11", features = ["xinerama", "randr"]}

@@ -1,5 +1,5 @@
 use crate::config::ConfigError;
-use crate::sfml::SfmlError;
+use crate::avatar::SfmlError;
 use crate::WindowFinderError;
 use std::result;
 use thiserror::Error;

@@ -4,15 +4,16 @@ use log::debug;
 pub mod args;
 pub mod config;
 pub mod errors;
-mod sfml;
-pub(crate) mod util;
+mod avatar;
+mod ui_util;
+
+pub(crate) use self::args::{DEFAULT_CONFIG_NAME, DEFAULT_SKIN_DIR_NAME};
+pub use self::errors::Result as PtuberResult;
+pub(crate) use self::ui_util::{get_window_finder, WindowFinder, WindowFinderError, InputGrabber, InputGramRunFlag, KeyboardEvent, MouseEvent};
 
 use self::args::Args;
-pub use self::args::{DEFAULT_CONFIG_NAME, DEFAULT_SKIN_DIR_NAME};
+use self::avatar::PtuberWindow;
 use self::config::Config;
-pub use self::errors::Result as PtuberResult;
-use self::sfml::PtuberWindow;
-pub use self::util::{get_window_finder, WindowFinder, WindowFinderError};
 
 pub const MAX_FRAMERATE: u32 = 60;
 
@@ -31,7 +32,7 @@ impl<'a> PTuber<'a> {
         let display = PtuberWindow::new(&args.skin_dir(), config.clone())?;
         Ok(Self { config, display })
     }
-    pub fn start_ptuber(self) -> PtuberResult<()> {
+    pub fn start_ptuber(&mut self) -> PtuberResult<()> {
         debug!("Current Config: {:?}", self.config);
         self.display.display(&self.config)?;
         Ok(())

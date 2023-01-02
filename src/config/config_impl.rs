@@ -1,3 +1,4 @@
+use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use serde_yaml;
 use sfml::system::{Vector2, Vector2f};
@@ -10,7 +11,7 @@ use std::path::Path;
 
 use sfml::graphics::Color as SfmlColor;
 
-#[derive(Serialize, Deserialize, Default, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Config {
     pub window: WindowDimensions,
     pub background: Color,
@@ -36,6 +37,7 @@ impl Config {
                     .read_to_string(&mut config_string)
                     .unwrap_or(0);
                 if config_string.is_empty() {
+                    info!("Config does not exist, creating it now...");
                     let default = Self {
                         ..Default::default()
                     };
@@ -45,11 +47,23 @@ impl Config {
                         .unwrap_or(0);
                     default
                 } else {
-                    serde_yaml::from_str(&config_string).unwrap_or_default()
+                    serde_yaml::from_str(&config_string).map_err(|_err| warn!("Could not parse config, using defaults...")).unwrap_or_default()
                 }
             }
             Err(_err) => Default::default(),
         }
+    }
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        let window = Default::default();
+        let background = Default::default();
+        let debug = false;
+        let anchors = Default::default();
+        let mouse_mark = Default::default();
+        let mouse_scale = Vector2f::new(1.0, 1.0);
+        Self { window, background, debug, anchors, mouse_mark, mouse_scale }
     }
 }
 
