@@ -14,6 +14,7 @@ use std::sync::mpsc::Receiver;
 
 use super::{MouseTextures, SfmlResult};
 use crate::{Config, MouseEvent};
+use crate::errors::Result;
 
 #[derive(Debug, Copy, Clone)]
 pub enum MouseState {
@@ -62,9 +63,12 @@ impl<'a> Device<'a> {
         mouse_mark
     }
 
-    pub fn update_config(&mut self, config: &Config) {
+    pub fn update_config(&mut self, config: &Config) -> Result<()> {
         self.mouse_scale = config.mouse_scale;
         self.mouse_rotation = config.mouse_mark.rotation;
+        self.textures.reload_textures(&config.images_path)?;
+        self.mouse_mark = Self::setup_debug(config);
+        Ok(())
     }
 
     pub fn mouse_sprite(&self) -> Sprite {

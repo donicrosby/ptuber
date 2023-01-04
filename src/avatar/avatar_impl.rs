@@ -6,7 +6,7 @@ use sfml::graphics::{
 use std::path::Path;
 use std::sync::mpsc::{channel, Sender};
 
-use super::{TextureContainer, Arms};
+use super::{AvatarTextures, Arms};
 use crate::errors::Result;
 use crate::Config;
 use crate::{get_window_finder, WindowFinder};
@@ -15,7 +15,7 @@ use crate::{InputGrabber, InputGrabRunFlag};
 
 #[derive(Debug)]
 pub(crate) struct Avatar<'a> {
-    textures: TextureContainer,
+    textures: AvatarTextures,
     arms: Arms<'a>,
     window_finder: Box<dyn WindowFinder>,
     config: Config,
@@ -26,7 +26,7 @@ pub(crate) struct Avatar<'a> {
 
 impl<'a> Avatar<'a> {
     pub fn new(image_path: &Path, config: Config) -> Result<Self> {
-        let textures = TextureContainer::new(image_path)?;
+        let textures = AvatarTextures::new(image_path)?;
         let (mouse_tx, mouse_rx) = channel();
         let (keyboard_tx, keyboard_rx) = channel();
         let (shutdown_tx, shutdown_rx) = channel();
@@ -45,9 +45,11 @@ impl<'a> Avatar<'a> {
         })
     }
 
-    pub fn update_config(&mut self, config: Config) {
-        self.arms.update_config(&config);
+    pub fn update_config(&mut self, config: Config) -> Result<()> {
+        self.textures.reload_textures(&config.images_path)?;
+        self.arms.update_config(&config)?;
         self.config = config;
+        Ok(())
     }
 
     pub fn config(&self) -> &Config {

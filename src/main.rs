@@ -1,8 +1,6 @@
-cfg_if::cfg_if! {
-    if #[cfg(target_os="windows")] {
-        #![windows_subsystem = "windows"]
-    }
-}
+
+#![windows_subsystem = "windows"]
+
 use log::error;
 use ptuber::{PTuber, PtuberResult as Result};
 

@@ -17,7 +17,7 @@ use device_query::Keycode;
 use crate::{KeyboardEvent, MouseEvent};
 use super::{ArmTextures, SfmlResult, Device};
 use crate::Config;
-
+use crate::errors::Result;
 
 const TO_DEGREE: f32 = 180.0 / std::f32::consts::PI;
 
@@ -75,13 +75,15 @@ impl<'a> Arms<'a> {
         (anchor_mark, hand_mark)
     }
 
-    pub fn update_config(&mut self, config: &Config) {
+    pub fn update_config(&mut self, config: &Config) -> Result<()> {
         self.arm_offset = config.anchors.arm_offset;
         self.anchor = config.anchors.anchor;
         let (anchor_mark, hand_mark) = Self::setup_debug(config);
         self.anchor_mark = anchor_mark;
         self.hand_mark = hand_mark;
-        self.device.update_config(config);
+        self.textures.reload_textures(&config.images_path)?;
+        self.device.update_config(config)?;
+        Ok(())
     }
 
     pub fn right_arm_sprite(&self) -> Sprite {

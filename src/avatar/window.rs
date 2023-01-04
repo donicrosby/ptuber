@@ -72,7 +72,7 @@ impl<'a> PtuberWindow<'a> {
                 let old_config = self.avatar.config();
                 let new_config = Config::new(&old_config.config_path, &old_config.images_path);
                 background_color = new_config.background.clone();
-                self.avatar.update_config(new_config);
+                self.avatar.update_config(new_config)?;
             }
 
             self.window.clear(background_color.clone().into());
