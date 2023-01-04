@@ -118,7 +118,7 @@ impl Default for WindowDimensions {
 #[serde(transparent)]
 pub struct IntOrFloat {
     #[serde(with = "either::serde_untagged")]
-    inner: Either<f32, usize>
+    inner: Either<f32, isize>
 }
 
 impl From<IntOrFloat> for f32 {
@@ -139,8 +139,8 @@ impl From<f32> for IntOrFloat {
     }
 }
 
-impl From<usize> for IntOrFloat {
-    fn from(value: usize) -> Self {
+impl From<isize> for IntOrFloat {
+    fn from(value: isize) -> Self {
         let inner = Either::Right(value);
         Self {
             inner
