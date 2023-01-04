@@ -9,7 +9,7 @@ mod ui_util;
 
 pub(crate) use self::args::{DEFAULT_CONFIG_NAME, DEFAULT_SKIN_DIR_NAME};
 pub use self::errors::Result as PtuberResult;
-pub(crate) use self::ui_util::{get_window_finder, WindowFinder, WindowFinderError, InputGrabber, InputGrabRunFlag, KeyboardEvent, MouseEvent};
+pub(crate) use self::ui_util::{get_window_finder, WindowFinderImpl, WindowFinder, WindowFinderError, InputGrabber, InputGrabRunFlag, KeyboardEvent, MouseEvent};
 pub(crate) use self::args::{default_config, default_skin_dir};
 
 use self::args::Args;

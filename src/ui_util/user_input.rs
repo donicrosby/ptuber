@@ -5,6 +5,10 @@ use std::sync::{Mutex, Arc};
 
 use log::{warn, debug, trace};
 use device_query::{DeviceState, Keycode, MouseButton, DeviceEvents};
+#[cfg(target_os = "linux")]
+use super::linux::MouseButtonType;
+#[cfg(target_os = "windows")]
+use super::windows::MouseButtonType;
 
 #[derive(Debug)]
 pub enum MouseEvent {
@@ -14,25 +18,6 @@ pub enum MouseEvent {
     RightReleased,
     UnknownPressed(usize),
     UnknownReleased(usize)
-}
-
-
-pub enum MouseButtonType {
-    Left,
-    Middle,
-    Right,
-    Unknown(usize)
-}
-
-impl From<MouseButton> for MouseButtonType {
-    fn from(value: MouseButton) -> Self {
-        match value {
-            1 => MouseButtonType::Left,
-            2 => MouseButtonType::Middle,
-            3 => MouseButtonType::Right,
-            u => MouseButtonType::Unknown(u)
-        }
-    }
 }
 
 #[derive(Debug)]

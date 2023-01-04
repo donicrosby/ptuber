@@ -9,7 +9,7 @@ use std::sync::mpsc::{channel, Sender};
 use super::{AvatarTextures, Arms};
 use crate::errors::Result;
 use crate::Config;
-use crate::{get_window_finder, WindowFinder};
+use crate::{get_window_finder, WindowFinderImpl, WindowFinder};
 use crate::{InputGrabber, InputGrabRunFlag};
 
 
@@ -17,7 +17,7 @@ use crate::{InputGrabber, InputGrabRunFlag};
 pub(crate) struct Avatar<'a> {
     textures: AvatarTextures,
     arms: Arms<'a>,
-    window_finder: Box<dyn WindowFinder>,
+    window_finder: WindowFinderImpl,
     config: Config,
     input_grabber: InputGrabber,
     shutdown_tx: Sender<InputGrabRunFlag>
@@ -82,11 +82,19 @@ impl<'a> Avatar<'a> {
             window.draw(&bg);
         }
         let mouse_pos = self.window_finder.get_cursor_position()?;
-        self.arms.draw_right_arm(mouse_pos, window);
+        if self.config.avatar_below_arm {
+            {
+                let avatar = self.avatar_sprite();
+                window.draw(&avatar);
+            }
+            self.arms.draw_right_arm(mouse_pos, window);
+        } else {
+            self.arms.draw_right_arm(mouse_pos, window);
 
-        {
-            let avatar = self.avatar_sprite();
-            window.draw(&avatar);
+            {
+                let avatar = self.avatar_sprite();
+                window.draw(&avatar);
+            }
         }
 
         self.arms.draw_left_arm(window);

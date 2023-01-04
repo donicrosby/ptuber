@@ -4,9 +4,11 @@ use windows::Win32::Graphics::Gdi::{
     GetMonitorInfoW, MonitorFromWindow, HMONITOR, MONITORINFO, MONITOR_DEFAULTTONEAREST,
 };
 use windows::Win32::UI::WindowsAndMessaging::{GetForegroundWindow, GetWindowRect};
+use device_query::MouseButton;
 
 use super::WindowFinder;
 use super::WindowFinderError;
+pub(crate) use super::MouseButtonType;
 
 #[derive(Debug, Clone)]
 pub struct WindowsWindowFinder {}
@@ -65,5 +67,16 @@ impl WindowFinder for WindowsWindowFinder {
             info.rcMonitor.right - info.rcMonitor.left,
             info.rcMonitor.bottom - info.rcMonitor.top,
         ))
+    }
+}
+
+impl From<MouseButton> for MouseButtonType {
+    fn from(value: MouseButton) -> Self {
+        match value {
+            1 => MouseButtonType::Left,
+            2 => MouseButtonType::Right,
+            3 => MouseButtonType::Middle,
+            u => MouseButtonType::Unknown(u),
+        }
     }
 }

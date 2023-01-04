@@ -20,6 +20,7 @@ pub struct Config {
     #[serde(skip)]
     pub images_path: PathBuf,
     pub debug: bool,
+    pub avatar_below_arm: bool,
     pub window: WindowDimensions,
     pub background: Color,
     #[serde(with = "VectorDef")]
@@ -84,10 +85,11 @@ impl Default for Config {
         let window = Default::default();
         let background = Default::default();
         let debug = false;
+        let avatar_below_arm = false;
         let anchors = Default::default();
         let mouse_mark = Default::default();
         let mouse_scale = Vector2::new(1.into(), 1.into());
-        Self { config_path, images_path, window, background, debug, anchors, mouse_mark, mouse_scale }
+        Self { config_path, images_path, window, background, debug, avatar_below_arm, anchors, mouse_mark, mouse_scale }
     }
 }
 
