@@ -62,6 +62,11 @@ impl<'a> Device<'a> {
         mouse_mark
     }
 
+    pub fn update_config(&mut self, config: &Config) {
+        self.mouse_scale = config.mouse_scale;
+        self.mouse_rotation = config.mouse_mark.rotation;
+    }
+
     pub fn mouse_sprite(&self) -> Sprite {
         Sprite::with_texture(&self.textures.mouse)
     }
@@ -157,7 +162,8 @@ impl<'a> Device<'a> {
                                 self.mouse_state
                             }
                         }
-                    }
+                    },
+                    _ => self.mouse_state
                 }
             },
             Err(_err) => self.mouse_state

@@ -1,33 +1,48 @@
 use std::thread::JoinHandle;
 use std::thread;
 use std::sync::mpsc::{Sender, Receiver};
+use std::sync::{Mutex, Arc};
 
-use log::{warn, debug};
-use rdev::{listen, Event, EventType, Button, Key};
+use log::{warn, debug, trace};
+use device_query::{DeviceState, Keycode, MouseButton, DeviceEvents};
 
 #[derive(Debug)]
 pub enum MouseEvent {
     LeftPressed,
     RightPressed,
     LeftReleased,
-    RightReleased
+    RightReleased,
+    UnknownPressed(usize),
+    UnknownReleased(usize)
+}
+
+
+pub enum MouseButtonType {
+    Left,
+    Middle,
+    Right,
+    Unknown(usize)
+}
+
+impl From<MouseButton> for MouseButtonType {
+    fn from(value: MouseButton) -> Self {
+        match value {
+            1 => MouseButtonType::Left,
+            2 => MouseButtonType::Middle,
+            3 => MouseButtonType::Right,
+            u => MouseButtonType::Unknown(u)
+        }
+    }
 }
 
 #[derive(Debug)]
 pub enum KeyboardEvent {
-    KeyPressed(Key),
-    KeyReleased(Key)
+    KeyPressed(Keycode),
+    KeyReleased(Keycode)
 }
 
 #[derive(Debug)]
-pub enum AvatarMoveEvent {
-    Mouse(MouseEvent),
-    Keyboard(KeyboardEvent),
-    None
-}
-
-#[derive(Debug)]
-pub enum InputGramRunFlag {
+pub enum InputGrabRunFlag {
     Run,
     Halt
 }
@@ -37,76 +52,87 @@ pub struct InputGrabber {
     thread: Option<JoinHandle<()>>,
 }
 
-fn convert_to_move_event(event: Event) -> AvatarMoveEvent {
-    match event.event_type {
-        EventType::KeyPress(k) => {
-           AvatarMoveEvent::Keyboard(KeyboardEvent::KeyPressed(k))
-        },
-        EventType::KeyRelease(k) => {
-            AvatarMoveEvent::Keyboard(KeyboardEvent::KeyReleased(k))
-        },
-        EventType::ButtonPress(b ) => {
-            match b {
-                Button::Left => AvatarMoveEvent::Mouse(MouseEvent::LeftPressed),
-                Button::Right => AvatarMoveEvent::Mouse(MouseEvent::RightPressed),
-                _ => AvatarMoveEvent::None
-            }
-        },
-        EventType::ButtonRelease(b) => {
-            match b {
-                Button::Left => AvatarMoveEvent::Mouse(MouseEvent::LeftReleased),
-                Button::Right => AvatarMoveEvent::Mouse(MouseEvent::RightReleased),
-                _ => AvatarMoveEvent::None
-            }
-        },
-        _ => AvatarMoveEvent::None
-    }
-}
-
 impl InputGrabber {
     pub fn new() -> Self {
-        
         Self {
             thread: None
         }
     }
     
-    pub fn start(&mut self, shutdown_rx: Receiver<InputGramRunFlag>, mouse_tx: Sender<MouseEvent>, keyboard_tx: Sender<KeyboardEvent>) {
+    pub fn start(&mut self, shutdown_rx: Receiver<InputGrabRunFlag>, mouse_tx: Sender<MouseEvent>, keyboard_tx: Sender<KeyboardEvent>) {
         let thread = thread::spawn(move || {
-            let callback = move |event: Event| {
-                match convert_to_move_event(event) {
-                    AvatarMoveEvent::Keyboard(e) => {
-                        keyboard_tx.send(e).map_err(|err| warn!("Keyboard Input Error: {:?}", err)).expect("keyboard RX");
-                    },
-                    AvatarMoveEvent::Mouse(e) => {
-                        mouse_tx.send(e).map_err(|err| warn!("Mouse Input Error: {:?}", err)).expect("mouse RX");
-                    },
-                    AvatarMoveEvent::None => {}
+            let mouse_tx = Arc::new(Mutex::new(mouse_tx));
+            let mouse_down_tx = mouse_tx.clone();
+            let mouse_up_tx = mouse_tx.clone();
+
+            let mouse_down_callback = move |b: &MouseButton| {
+                debug!("Got Mouse Down Button: {}", b);
+                let button_type = (*b).into();
+                let e = match button_type {
+                    MouseButtonType::Left => MouseEvent::LeftPressed,
+                    MouseButtonType::Right => MouseEvent::RightPressed,
+                    MouseButtonType::Middle => MouseEvent::UnknownPressed(2),
+                    MouseButtonType::Unknown(u) => MouseEvent::UnknownPressed(u)
+                };
+                if let Ok(tx) = mouse_down_tx.lock() {
+                    debug!("Sending Mouse Event: {:?}", e);
+                    tx.send(e).map_err(|err| warn!("Mouse Input Error: {:?}", err)).expect("mouse down TX");
+                }
+            };
+
+            let mouse_up_callback = move |b: &MouseButton| {
+                debug!("Got Mouse Up Button: {}", b);
+                let button_type = (*b).into();
+                let e = match button_type {
+                    MouseButtonType::Left => MouseEvent::LeftReleased,
+                    MouseButtonType::Right => MouseEvent::RightReleased,
+                    MouseButtonType::Middle => MouseEvent::UnknownReleased(2),
+                    MouseButtonType::Unknown(u) => MouseEvent::UnknownReleased(u)
+                };
+                if let Ok(tx) = mouse_up_tx.lock() {
+                    debug!("Sending Mouse Event: {:?}", e);
+                    tx.send(e).map_err(|err| warn!("Mouse Input Error: {:?}", err)).expect("mouse up TX");
                 }
                 
             };
 
+            let keyboard_tx = Arc::new(Mutex::new(keyboard_tx));
+            let keyboard_down_tx = keyboard_tx.clone();
+            let keyboard_up_tx = keyboard_tx.clone();
+
+            let keyboard_down_callback = move |k: &Keycode| {
+                debug!("Got Key Down: {:?}", k);
+                if let Ok(tx) = keyboard_down_tx.lock() {
+                    tx.send(KeyboardEvent::KeyPressed(*k)).map_err(|err| warn!("Keyboard Input Error: {:?}", err)).expect("keyboard down TX");
+                }
+                
+            };
+
+            let keyboard_up_callback = move |k: &Keycode| {
+                debug!("Got Key Up: {:?}", k);
+                if let Ok(tx) = keyboard_up_tx.lock() {
+                    tx.send(KeyboardEvent::KeyReleased(*k)).map_err(|err| warn!("Keyboard Input Error: {:?}", err)).expect("keyboard up TX");
+                }
+            };
+
+            let device_state = DeviceState::new();
+            let _m_down_guard = device_state.on_mouse_down(mouse_down_callback);
+            let _m_up_guard = device_state.on_mouse_up(mouse_up_callback);
+            let _k_down_guard = device_state.on_key_down(keyboard_down_callback);
+            let _k_up_guard = device_state.on_key_up(keyboard_up_callback);
+
             let mut flag = shutdown_rx.recv().unwrap();
             loop {
                 match flag {
-                    InputGramRunFlag::Halt => {
+                    InputGrabRunFlag::Halt => {
                         debug!("Grabber exiting!");
-                        return;
+                        break;
                     },
-                    InputGramRunFlag::Run => {
-                        debug!("Listening for input!");
-                        match listen(callback.clone()) {
-                            Err(err) => {
-                                warn!("Input Event Error: {:?}", err);
-                            },
-                            Ok(_) => {
-                                debug!("Listening Okay!");
-                            }
-                        }
+                    InputGrabRunFlag::Run => {
                         if let Ok(recvd_flag) = shutdown_rx.try_recv(){
                             flag = recvd_flag;
                         }
-                        debug!("Grab Flag: {:?}", flag);
+                        trace!("Grab Flag: {:?}", flag);
                     }
                 }
             }
@@ -117,7 +143,7 @@ impl InputGrabber {
     pub fn shutdown(&mut self) {
         if let Some(thread) = self.thread.take() {
             debug!("Joining input monitor thread!");
-            // thread.join().expect("joining input thread");
+            thread.join().expect("joining input thread");
             debug!("Thread joined!");
         }
     }

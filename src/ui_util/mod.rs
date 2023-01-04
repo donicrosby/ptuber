@@ -6,7 +6,7 @@ mod windows;
 mod user_input;
 
 pub(crate) use self::errors::WindowFinderError;
-pub(crate) use self::user_input::{InputGrabber, InputGramRunFlag, KeyboardEvent, MouseEvent};
+pub(crate) use self::user_input::{InputGrabber, InputGrabRunFlag, KeyboardEvent, MouseEvent};
 
 #[cfg(target_os = "linux")]
 use self::linux::LinuxWindowFinder;

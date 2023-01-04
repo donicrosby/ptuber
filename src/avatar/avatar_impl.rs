@@ -10,7 +10,7 @@ use super::{TextureContainer, Arms};
 use crate::errors::Result;
 use crate::Config;
 use crate::{get_window_finder, WindowFinder};
-use crate::{InputGrabber, InputGramRunFlag};
+use crate::{InputGrabber, InputGrabRunFlag};
 
 
 #[derive(Debug)]
@@ -20,7 +20,7 @@ pub(crate) struct Avatar<'a> {
     window_finder: Box<dyn WindowFinder>,
     config: Config,
     input_grabber: InputGrabber,
-    shutdown_tx: Sender<InputGramRunFlag>
+    shutdown_tx: Sender<InputGrabRunFlag>
 }
 
 
@@ -45,6 +45,15 @@ impl<'a> Avatar<'a> {
         })
     }
 
+    pub fn update_config(&mut self, config: Config) {
+        self.arms.update_config(&config);
+        self.config = config;
+    }
+
+    pub fn config(&self) -> &Config {
+        &self.config
+    }
+
     pub fn background_sprite(&self) -> Sprite {
         Sprite::with_texture(&self.textures.background)
     }
@@ -54,11 +63,11 @@ impl<'a> Avatar<'a> {
     }
 
     pub fn start_input_grabbing(&self) {
-        self.shutdown_tx.send(InputGramRunFlag::Run).expect("Could not start input grabber");
+        self.shutdown_tx.send(InputGrabRunFlag::Run).expect("Could not start input grabber");
     }
 
     pub fn stop_input_grabbing(&mut self) {
-        self.shutdown_tx.send(InputGramRunFlag::Halt).expect("Could not shutdown input grabber");
+        self.shutdown_tx.send(InputGrabRunFlag::Halt).expect("Could not shutdown input grabber");
         self.input_grabber.shutdown();
     }
 

@@ -6,7 +6,7 @@ clean:
 	cargo clean
 
 windows-build:
-	SFML_STATIC=1 SFML_STDCPP_STATIC=/usr/lib/gcc/x86_64-w64-mingw32/9.3-posix/ SFML_LIBS_DIR=$(shell pwd)/SFML-libs/mingw/lib/ SFML_INCLUDE_DIR=$(shell pwd)/SFML-libs/mingw/include/ cargo build --target x86_64-pc-windows-gnu $(if $(release), --release)
+	SFML_STATIC=1 SFML_STDCPP_STATIC=1 CXX="/usr/bin/x86_64-w64-mingw32-g++-posix" SFML_LIBS_DIR=$(shell pwd)/SFML-libs/mingw/lib/ SFML_INCLUDE_DIR=$(shell pwd)/SFML-libs/mingw/include/ cargo build --target x86_64-pc-windows-gnu $(if $(release), --release)
 
 windows-package: windows-build
 	mkdir -p $(windows-package-path)

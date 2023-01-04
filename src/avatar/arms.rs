@@ -12,7 +12,7 @@ use sfml::graphics::{
 use sfml::system::Vector2f;
 use std::sync::mpsc::Receiver;
 use std::collections::HashSet;
-use rdev::Key;
+use device_query::Keycode;
 
 use crate::{KeyboardEvent, MouseEvent};
 use super::{ArmTextures, SfmlResult, Device};
@@ -37,7 +37,7 @@ pub struct Arms<'a> {
     hand_mark: CircleShape<'a>,
     anchor_mark: CircleShape<'a>,
     keyboard_rx: Receiver<KeyboardEvent>,
-    keys_currently_pressed: HashSet<Key>,
+    keys_currently_pressed: HashSet<Keycode>,
     left_arm_state: LeftArmState,
 }
 
@@ -73,6 +73,15 @@ impl<'a> Arms<'a> {
         hand_mark.set_radius(5.0);
         hand_mark.set_fill_color(Color::RED);
         (anchor_mark, hand_mark)
+    }
+
+    pub fn update_config(&mut self, config: &Config) {
+        self.arm_offset = config.anchors.arm_offset;
+        self.anchor = config.anchors.anchor;
+        let (anchor_mark, hand_mark) = Self::setup_debug(config);
+        self.anchor_mark = anchor_mark;
+        self.hand_mark = hand_mark;
+        self.device.update_config(config);
     }
 
     pub fn right_arm_sprite(&self) -> Sprite {

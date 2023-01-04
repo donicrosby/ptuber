@@ -2,7 +2,7 @@ use super::{Avatar};
 use crate::PtuberResult;
 use crate::{Config, DEFAULT_CONFIG_NAME, DEFAULT_SKIN_DIR_NAME, MAX_FRAMERATE};
 use sfml::graphics::{RenderTarget, RenderWindow};
-use sfml::window::{Event, Style};
+use sfml::window::{Event, Style, Key};
 use std::path::{Path, PathBuf, MAIN_SEPARATOR};
 use log::debug;
 
@@ -42,11 +42,13 @@ impl<'a> PtuberWindow<'a> {
         let avatar = Avatar::new(skin_path, config)?;
         Ok(Self {
             window,
-            avatar,
+            avatar
         })
     }
 
-    pub fn display(&mut self, config: &Config) -> PtuberResult<()> {
+    pub fn display(&mut self) -> PtuberResult<()> {
+        let mut reload_config = false;
+        let mut background_color = self.avatar.config().background.clone();
         self.avatar.start_input_grabbing();
         while self.window.is_open() {
             while let Some(event) = self.window.poll_event() {
@@ -57,12 +59,23 @@ impl<'a> PtuberWindow<'a> {
                         self.avatar.stop_input_grabbing();
                         debug!("Stopped input grabbing!");
                         return Ok(());
+                    },
+                    Event::KeyPressed { code , alt: _alt, ctrl, shift: _shift, system: _system } => {
+                        if code == Key::R && ctrl {
+                            reload_config = true;
+                        }
                     }
                     _ => {}
                 }
             }
+            if reload_config {
+                let old_config = self.avatar.config();
+                let new_config = Config::new(&old_config.config_path, &old_config.images_path);
+                background_color = new_config.background.clone();
+                self.avatar.update_config(new_config);
+            }
 
-            self.window.clear(config.background.clone().into());
+            self.window.clear(background_color.clone().into());
             self.avatar
                 .draw(&mut self.window)?;
 

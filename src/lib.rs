@@ -9,7 +9,8 @@ mod ui_util;
 
 pub(crate) use self::args::{DEFAULT_CONFIG_NAME, DEFAULT_SKIN_DIR_NAME};
 pub use self::errors::Result as PtuberResult;
-pub(crate) use self::ui_util::{get_window_finder, WindowFinder, WindowFinderError, InputGrabber, InputGramRunFlag, KeyboardEvent, MouseEvent};
+pub(crate) use self::ui_util::{get_window_finder, WindowFinder, WindowFinderError, InputGrabber, InputGrabRunFlag, KeyboardEvent, MouseEvent};
+pub(crate) use self::args::{default_config, default_skin_dir};
 
 use self::args::Args;
 use self::avatar::PtuberWindow;
@@ -28,13 +29,13 @@ impl<'a> PTuber<'a> {
         let args = Self::parse_args();
         debug!("Skin path: {:?}", args.skin_dir());
         debug!("Config path: {:?}", args.config_path());
-        let config = Config::new(&args.config_path());
+        let config = Config::new(&args.config_path(), &args.skin_dir());
         let display = PtuberWindow::new(&args.skin_dir(), config.clone())?;
         Ok(Self { config, display })
     }
     pub fn start_ptuber(&mut self) -> PtuberResult<()> {
         debug!("Current Config: {:?}", self.config);
-        self.display.display(&self.config)?;
+        self.display.display()?;
         Ok(())
     }
 

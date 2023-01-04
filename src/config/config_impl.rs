@@ -7,12 +7,17 @@ use std::fs::OpenOptions;
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::io::BufWriter;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use sfml::graphics::Color as SfmlColor;
+use crate::{default_config, default_skin_dir};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Config {
+    #[serde(skip)]
+    pub config_path: PathBuf,
+    #[serde(skip)]
+    pub images_path: PathBuf,
     pub window: WindowDimensions,
     pub background: Color,
     pub debug: bool,
@@ -23,7 +28,16 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn new(config_path: &Path) -> Self {
+    pub fn new(config_path: &Path, images_path: &Path) -> Self {
+        Self::load_config_from_file(config_path, images_path)
+    }
+
+    fn set_paths_in_config(config: &mut Self, config_path: &Path, images_path: &Path) {
+        config.config_path = PathBuf::from(config_path);
+        config.images_path = PathBuf::from(images_path);
+    }
+
+    fn load_config_from_file(config_path: &Path, images_path: &Path) -> Self {
         let config_file = OpenOptions::new()
             .read(true)
             .write(true)
@@ -38,32 +52,41 @@ impl Config {
                     .unwrap_or(0);
                 if config_string.is_empty() {
                     info!("Config does not exist, creating it now...");
-                    let default = Self {
+                    let mut default = Self {
                         ..Default::default()
                     };
+                    Self::set_paths_in_config(&mut default, config_path, images_path);
                     let mut config_writer = BufWriter::new(&file);
                     let _bytes_written = config_writer
                         .write(serde_yaml::to_string(&default).unwrap().as_bytes())
                         .unwrap_or(0);
                     default
                 } else {
-                    serde_yaml::from_str(&config_string).map_err(|_err| warn!("Could not parse config, using defaults...")).unwrap_or_default()
+                    let mut config = serde_yaml::from_str(&config_string).map_err(|_err| warn!("Could not parse config, using defaults...")).unwrap_or_default();
+                    Self::set_paths_in_config(&mut config, config_path, images_path);
+                    config
                 }
             }
-            Err(_err) => Default::default(),
+            Err(_err) => {
+                let mut default = Default::default();
+                Self::set_paths_in_config(&mut default, config_path, images_path);
+                default
+            },
         }
     }
 }
 
 impl Default for Config {
     fn default() -> Self {
+        let images_path = PathBuf::from(default_skin_dir());
+        let config_path = PathBuf::from(default_config());
         let window = Default::default();
         let background = Default::default();
         let debug = false;
         let anchors = Default::default();
         let mouse_mark = Default::default();
         let mouse_scale = Vector2f::new(1.0, 1.0);
-        Self { window, background, debug, anchors, mouse_mark, mouse_scale }
+        Self { config_path, images_path, window, background, debug, anchors, mouse_mark, mouse_scale }
     }
 }
 
