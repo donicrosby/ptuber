@@ -2,7 +2,7 @@ use clap::{Parser, ValueHint};
 use std::path::{PathBuf, MAIN_SEPARATOR};
 
 pub const DEFAULT_SKIN_DIR_NAME: &str = "skin";
-pub const DEFAULT_CONFIG_NAME: &str = "config.yaml";
+pub const DEFAULT_CONFIG_NAME: &str = "config.toml";
 
 pub fn default_skin_dir() -> String {
     format!(".{}{}", MAIN_SEPARATOR, DEFAULT_SKIN_DIR_NAME)

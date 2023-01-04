@@ -46,8 +46,8 @@ impl<'a> Arms<'a> {
         let textures = ArmTextures::new(images_path)?;
         let device = Device::new(images_path, config, mouse_rx)?;
         let (anchor_mark, hand_mark) = Self::setup_debug(config);
-        let arm_offset = config.anchors.arm_offset;
-        let anchor = config.anchors.anchor;
+        let arm_offset = config.anchors.arm_offset.into_other();
+        let anchor = config.anchors.anchor.into_other();
         let keys_currently_pressed = HashSet::new();
         let left_arm_state = LeftArmState::Up;
         Ok(Self {
@@ -66,7 +66,7 @@ impl<'a> Arms<'a> {
     fn setup_debug(config: &Config) -> (CircleShape<'a>, CircleShape<'a>) {
         let mut anchor_mark = CircleShape::default();
         let mut hand_mark = CircleShape::default();
-        anchor_mark.set_position(config.anchors.anchor);
+        anchor_mark.set_position(config.anchors.anchor.into_other());
         anchor_mark.set_radius(5.0);
         anchor_mark.set_fill_color(Color::BLUE);
 
@@ -76,8 +76,8 @@ impl<'a> Arms<'a> {
     }
 
     pub fn update_config(&mut self, config: &Config) -> Result<()> {
-        self.arm_offset = config.anchors.arm_offset;
-        self.anchor = config.anchors.anchor;
+        self.arm_offset = config.anchors.arm_offset.into_other();
+        self.anchor = config.anchors.anchor.into_other();
         let (anchor_mark, hand_mark) = Self::setup_debug(config);
         self.anchor_mark = anchor_mark;
         self.hand_mark = hand_mark;
@@ -150,7 +150,7 @@ impl<'a> Arms<'a> {
                         self.keys_currently_pressed.remove(&key);
                     }
                 }
-                if self.keys_currently_pressed.len() > 0 {
+                if !self.keys_currently_pressed.is_empty() {
                     if self.keys_currently_pressed.len() % 2 == 0 {
                         arm = LeftArmState::Left;
                     } else {

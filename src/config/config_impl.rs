@@ -1,13 +1,14 @@
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
-use serde_yaml;
-use sfml::system::{Vector2, Vector2f};
+use toml;
+use sfml::system::Vector2;
 use sfml::window::VideoMode;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::io::BufWriter;
 use std::path::{Path, PathBuf};
+use either::Either;
 
 use sfml::graphics::Color as SfmlColor;
 use crate::{default_config, default_skin_dir};
@@ -18,13 +19,13 @@ pub struct Config {
     pub config_path: PathBuf,
     #[serde(skip)]
     pub images_path: PathBuf,
+    pub debug: bool,
     pub window: WindowDimensions,
     pub background: Color,
-    pub debug: bool,
+    #[serde(with = "VectorDef")]
+    pub mouse_scale: Vector2<IntOrFloat>,
     pub anchors: Anchors,
     pub mouse_mark: MouseMark,
-    #[serde(with = "VectorDef")]
-    pub mouse_scale: Vector2f,
 }
 
 impl Config {
@@ -58,11 +59,11 @@ impl Config {
                     Self::set_paths_in_config(&mut default, config_path, images_path);
                     let mut config_writer = BufWriter::new(&file);
                     let _bytes_written = config_writer
-                        .write(serde_yaml::to_string(&default).unwrap().as_bytes())
+                        .write(toml::to_string(&default).unwrap().as_bytes())
                         .unwrap_or(0);
                     default
                 } else {
-                    let mut config = serde_yaml::from_str(&config_string).map_err(|_err| warn!("Could not parse config, using defaults...")).unwrap_or_default();
+                    let mut config = toml::from_str(&config_string).map_err(|_err| warn!("Could not parse config, using defaults...")).unwrap_or_default();
                     Self::set_paths_in_config(&mut config, config_path, images_path);
                     config
                 }
@@ -85,7 +86,7 @@ impl Default for Config {
         let debug = false;
         let anchors = Default::default();
         let mouse_mark = Default::default();
-        let mouse_scale = Vector2f::new(1.0, 1.0);
+        let mouse_scale = Vector2::new(1.into(), 1.into());
         Self { config_path, images_path, window, background, debug, anchors, mouse_mark, mouse_scale }
     }
 }
@@ -110,6 +111,41 @@ impl Default for WindowDimensions {
         }
     }
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+#[serde(transparent)]
+pub struct IntOrFloat {
+    #[serde(with = "either::serde_untagged")]
+    inner: Either<f32, usize>
+}
+
+impl From<IntOrFloat> for f32 {
+    fn from(value: IntOrFloat) -> Self {
+        match value.inner {
+            Either::Left(float) => float,
+            Either::Right(int) => int as f32
+        }
+    }
+}
+
+impl From<f32> for IntOrFloat {
+    fn from(value: f32) -> Self {
+        let inner = Either::Left(value);
+        Self {
+            inner
+        }
+    }
+}
+
+impl From<usize> for IntOrFloat {
+    fn from(value: usize) -> Self {
+        let inner = Either::Right(value);
+        Self {
+            inner
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 #[serde(remote = "Vector2")]
 struct VectorDef<S> {
@@ -145,35 +181,35 @@ impl Default for Color {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Anchors {
     #[serde(with = "VectorDef")]
-    pub anchor: Vector2f,
+    pub anchor: Vector2<IntOrFloat>,
     #[serde(with = "VectorDef")]
-    pub arm_offset: Vector2f,
+    pub arm_offset: Vector2<IntOrFloat>,
 }
 
 impl Default for Anchors {
     fn default() -> Self {
         Self {
-            anchor: Vector2f::new(195.0, 240.0),
-            arm_offset: Vector2f::new(67.0, 0.0),
+            anchor: Vector2::new(195.into(), 240.into()),
+            arm_offset: Vector2::new(67.into(), 0.into()),
         }
     }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct MouseMark {
+    pub rotation: IntOrFloat,
     #[serde(with = "VectorDef")]
-    pub position: Vector2f,
+    pub position: Vector2<IntOrFloat>,
     #[serde(with = "VectorDef")]
-    pub size: Vector2f,
-    pub rotation: f32,
+    pub size: Vector2<IntOrFloat>,
 }
 
 impl Default for MouseMark {
     fn default() -> Self {
         Self {
-            position: Vector2f::new(40.0, 290.0),
-            size: Vector2f::new(180.0, 90.0),
-            rotation: 15.0,
+            position: Vector2::new(40.into(), 290.into()),
+            size: Vector2::new(180.into(), 90.into()),
+            rotation: 15.into(),
         }
     }
 }

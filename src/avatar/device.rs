@@ -37,9 +37,9 @@ pub struct Device<'a> {
 impl<'a> Device<'a> {
     pub fn new(images_path: &Path, config: &Config, mouse_rx: Receiver<MouseEvent>) -> SfmlResult<Self> {
         let textures = MouseTextures::new(images_path)?;
-        let mouse_scale = config.mouse_scale;
+        let mouse_scale = config.mouse_scale.into_other();
         let mouse_mark = Self::setup_debug(config);
-        let mouse_rotation = config.mouse_mark.rotation;
+        let mouse_rotation = config.mouse_mark.rotation.into();
         let mouse_state = MouseState::None;
         Ok(Self {
           textures,
@@ -56,16 +56,16 @@ impl<'a> Device<'a> {
         mouse_mark.set_fill_color(Color::TRANSPARENT);
         mouse_mark.set_outline_color(Color::YELLOW);
         mouse_mark.set_outline_thickness(2.0);
-        mouse_mark.set_position(config.mouse_mark.position);
-        mouse_mark.set_size(config.mouse_mark.size);
-        mouse_mark.set_rotation(config.mouse_mark.rotation);
+        mouse_mark.set_position(config.mouse_mark.position.into_other());
+        mouse_mark.set_size(config.mouse_mark.size.into_other());
+        mouse_mark.set_rotation(config.mouse_mark.rotation.into());
 
         mouse_mark
     }
 
     pub fn update_config(&mut self, config: &Config) -> Result<()> {
-        self.mouse_scale = config.mouse_scale;
-        self.mouse_rotation = config.mouse_mark.rotation;
+        self.mouse_scale = config.mouse_scale.into_other();
+        self.mouse_rotation = config.mouse_mark.rotation.into();
         self.textures.reload_textures(&config.images_path)?;
         self.mouse_mark = Self::setup_debug(config);
         Ok(())

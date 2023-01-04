@@ -63,7 +63,7 @@ impl InputGrabber {
         let thread = thread::spawn(move || {
             let mouse_tx = Arc::new(Mutex::new(mouse_tx));
             let mouse_down_tx = mouse_tx.clone();
-            let mouse_up_tx = mouse_tx.clone();
+            let mouse_up_tx = mouse_tx;
 
             let mouse_down_callback = move |b: &MouseButton| {
                 debug!("Got Mouse Down Button: {}", b);
@@ -98,7 +98,7 @@ impl InputGrabber {
 
             let keyboard_tx = Arc::new(Mutex::new(keyboard_tx));
             let keyboard_down_tx = keyboard_tx.clone();
-            let keyboard_up_tx = keyboard_tx.clone();
+            let keyboard_up_tx = keyboard_tx;
 
             let keyboard_down_callback = move |k: &Keycode| {
                 debug!("Got Key Down: {:?}", k);

@@ -7,9 +7,10 @@ description = "A Rust implementation of a simplified VTuber rigging software"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-serde_yaml = "0.9"
+toml = "0.5"
+derive_more = "0.99"
 serde = { version = "1", features = ["derive"] }
-rgb = { version = "0.8", features = ["serde"] }
+# rgb = { version = "0.8", features = ["serde"] }
 thiserror = "1.0.37"
 clap = { version = "4", features = ["derive", "cargo"] }
 # sfml = { path="./rust-sfml" }
@@ -19,7 +20,7 @@ cfg-if = "1"
 dyn-clone = "1"
 env_logger = "0.10"
 device_query = "1"
-
+either = { version = "1", features = ["serde"] }
 
 
 [target.'cfg(all(unix, target_os = "linux"))'.dependencies]
