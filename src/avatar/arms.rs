@@ -8,7 +8,7 @@ use std::collections::HashSet;
 use std::path::Path;
 use std::sync::mpsc::Receiver;
 
-use super::{ArmTextures, Device, SfmlResult};
+use super::{ArmTextures, Device, SfmlResult, TextureContainer};
 use crate::errors::Result;
 use crate::Config;
 use crate::{KeyboardEvent, MouseEvent};

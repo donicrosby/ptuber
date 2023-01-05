@@ -14,11 +14,14 @@ const MOUSE_L: &str = "mousel.png";
 const MOUSE_R: &str = "mouser.png";
 const MOUSE_LR: &str = "mouselr.png";
 
-fn load_texture_from_file(images_path: &Path, image: &str) -> SfmlResult<SfBox<Texture>> {
-    let mut image_path = PathBuf::from(images_path);
-    image_path.push(image);
-    let texture = Texture::from_file(image_path.to_str().ok_or(SfmlError::PathConversion)?)?;
-    Ok(texture)
+pub trait TextureContainer {
+    fn reload_textures(&mut self, images_path: &Path) -> SfmlResult<()>;
+    fn load_texture_from_file(images_path: &Path, image: &str) -> SfmlResult<SfBox<Texture>> {
+        let mut image_path = PathBuf::from(images_path);
+        image_path.push(image);
+        let texture = Texture::from_file(image_path.to_str().ok_or(SfmlError::PathConversion)?)?;
+        Ok(texture)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -29,15 +32,17 @@ pub(crate) struct AvatarTextures {
 
 impl AvatarTextures {
     pub fn new(images_path: &Path) -> SfmlResult<Self> {
-        let background = load_texture_from_file(images_path, BACKGROUND_IMAGE)?;
-        let avatar = load_texture_from_file(images_path, AVATAR_IMAGE)?;
+        let background = Self::load_texture_from_file(images_path, BACKGROUND_IMAGE)?;
+        let avatar = Self::load_texture_from_file(images_path, AVATAR_IMAGE)?;
 
         Ok(Self { background, avatar })
     }
+}
 
-    pub fn reload_textures(&mut self, images_path: &Path) -> SfmlResult<()> {
-        let background = load_texture_from_file(images_path, BACKGROUND_IMAGE)?;
-        let avatar = load_texture_from_file(images_path, AVATAR_IMAGE)?;
+impl TextureContainer for AvatarTextures {
+    fn reload_textures(&mut self, images_path: &Path) -> SfmlResult<()> {
+        let background = Self::load_texture_from_file(images_path, BACKGROUND_IMAGE)?;
+        let avatar = Self::load_texture_from_file(images_path, AVATAR_IMAGE)?;
         self.background = background;
         self.avatar = avatar;
         Ok(())
@@ -52,14 +57,16 @@ pub(crate) struct ArmTextures {
 
 impl ArmTextures {
     pub fn new(images_path: &Path) -> SfmlResult<Self> {
-        let right = load_texture_from_file(images_path, RIGHT_ARM_IMAGE)?;
+        let right = Self::load_texture_from_file(images_path, RIGHT_ARM_IMAGE)?;
 
         let left = LeftArmTextures::new(images_path)?;
         Ok(Self { right, left })
     }
+}
 
-    pub fn reload_textures(&mut self, images_path: &Path) -> SfmlResult<()> {
-        let right = load_texture_from_file(images_path, RIGHT_ARM_IMAGE)?;
+impl TextureContainer for ArmTextures {
+    fn reload_textures(&mut self, images_path: &Path) -> SfmlResult<()> {
+        let right = Self::load_texture_from_file(images_path, RIGHT_ARM_IMAGE)?;
         self.right = right;
         self.left.reload_textures(images_path)?;
         Ok(())
@@ -75,17 +82,19 @@ pub(crate) struct LeftArmTextures {
 
 impl LeftArmTextures {
     pub fn new(images_path: &Path) -> SfmlResult<Self> {
-        let left = load_texture_from_file(images_path, LEFT_ARM_LEFT_IMAGE)?;
-        let right = load_texture_from_file(images_path, LEFT_ARM_RIGHT_IMAGE)?;
-        let up = load_texture_from_file(images_path, LEFT_ARM_UP_IMAGE)?;
+        let left = Self::load_texture_from_file(images_path, LEFT_ARM_LEFT_IMAGE)?;
+        let right = Self::load_texture_from_file(images_path, LEFT_ARM_RIGHT_IMAGE)?;
+        let up = Self::load_texture_from_file(images_path, LEFT_ARM_UP_IMAGE)?;
 
         Ok(Self { left, right, up })
     }
+}
 
-    pub fn reload_textures(&mut self, images_path: &Path) -> SfmlResult<()> {
-        let left = load_texture_from_file(images_path, LEFT_ARM_LEFT_IMAGE)?;
-        let right = load_texture_from_file(images_path, LEFT_ARM_RIGHT_IMAGE)?;
-        let up = load_texture_from_file(images_path, LEFT_ARM_UP_IMAGE)?;
+impl TextureContainer for LeftArmTextures {
+    fn reload_textures(&mut self, images_path: &Path) -> SfmlResult<()> {
+        let left = Self::load_texture_from_file(images_path, LEFT_ARM_LEFT_IMAGE)?;
+        let right = Self::load_texture_from_file(images_path, LEFT_ARM_RIGHT_IMAGE)?;
+        let up = Self::load_texture_from_file(images_path, LEFT_ARM_UP_IMAGE)?;
 
         self.left = left;
         self.right = right;
@@ -104,10 +113,10 @@ pub(crate) struct MouseTextures {
 
 impl MouseTextures {
     pub fn new(images_path: &Path) -> SfmlResult<Self> {
-        let mouse = load_texture_from_file(images_path, MOUSE)?;
-        let mouse_l = load_texture_from_file(images_path, MOUSE_L)?;
-        let mouse_r = load_texture_from_file(images_path, MOUSE_R)?;
-        let mouse_lr = load_texture_from_file(images_path, MOUSE_LR)?;
+        let mouse = Self::load_texture_from_file(images_path, MOUSE)?;
+        let mouse_l = Self::load_texture_from_file(images_path, MOUSE_L)?;
+        let mouse_r = Self::load_texture_from_file(images_path, MOUSE_R)?;
+        let mouse_lr = Self::load_texture_from_file(images_path, MOUSE_LR)?;
 
         Ok(Self {
             mouse,
@@ -116,12 +125,14 @@ impl MouseTextures {
             mouse_lr,
         })
     }
+}
 
-    pub fn reload_textures(&mut self, images_path: &Path) -> SfmlResult<()> {
-        let mouse = load_texture_from_file(images_path, MOUSE)?;
-        let mouse_l = load_texture_from_file(images_path, MOUSE_L)?;
-        let mouse_r = load_texture_from_file(images_path, MOUSE_R)?;
-        let mouse_lr = load_texture_from_file(images_path, MOUSE_LR)?;
+impl TextureContainer for MouseTextures {
+    fn reload_textures(&mut self, images_path: &Path) -> SfmlResult<()> {
+        let mouse = Self::load_texture_from_file(images_path, MOUSE)?;
+        let mouse_l = Self::load_texture_from_file(images_path, MOUSE_L)?;
+        let mouse_r = Self::load_texture_from_file(images_path, MOUSE_R)?;
+        let mouse_lr = Self::load_texture_from_file(images_path, MOUSE_LR)?;
 
         self.mouse = mouse;
         self.mouse_l = mouse_l;

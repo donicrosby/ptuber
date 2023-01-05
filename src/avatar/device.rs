@@ -5,7 +5,7 @@ use sfml::system::Vector2f;
 use std::path::Path;
 use std::sync::mpsc::Receiver;
 
-use super::{MouseTextures, SfmlResult};
+use super::{MouseTextures, SfmlResult, TextureContainer};
 use crate::errors::Result;
 use crate::{Config, MouseEvent};
 

@@ -2,7 +2,7 @@ use sfml::graphics::{RenderTarget, RenderWindow, Sprite};
 use std::path::Path;
 use std::sync::mpsc::{channel, Sender};
 
-use super::{Arms, AvatarTextures};
+use super::{Arms, AvatarTextures, TextureContainer};
 use crate::errors::Result;
 use crate::Config;
 use crate::{get_window_finder, WindowFinder, WindowFinderImpl};
