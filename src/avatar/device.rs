@@ -1,20 +1,13 @@
-use std::path::Path;
-use sfml::system::Vector2f;
 use sfml::graphics::{
-    Sprite,
-    RenderWindow,
-    Transformable,
-    Color,
-    Shape,
-    RenderTarget,
-    RectangleShape,
-    Transform
+    Color, RectangleShape, RenderTarget, RenderWindow, Shape, Sprite, Transform, Transformable,
 };
+use sfml::system::Vector2f;
+use std::path::Path;
 use std::sync::mpsc::Receiver;
 
 use super::{MouseTextures, SfmlResult};
-use crate::{Config, MouseEvent};
 use crate::errors::Result;
+use crate::{Config, MouseEvent};
 
 #[derive(Debug, Copy, Clone)]
 pub enum MouseState {
@@ -31,23 +24,27 @@ pub struct Device<'a> {
     mouse_mark: RectangleShape<'a>,
     mouse_rotation: f32,
     mouse_rx: Receiver<MouseEvent>,
-    mouse_state: MouseState
+    mouse_state: MouseState,
 }
 
 impl<'a> Device<'a> {
-    pub fn new(images_path: &Path, config: &Config, mouse_rx: Receiver<MouseEvent>) -> SfmlResult<Self> {
+    pub fn new(
+        images_path: &Path,
+        config: &Config,
+        mouse_rx: Receiver<MouseEvent>,
+    ) -> SfmlResult<Self> {
         let textures = MouseTextures::new(images_path)?;
         let mouse_scale = config.mouse_scale.into_other();
         let mouse_mark = Self::setup_debug(config);
         let mouse_rotation = config.mouse_mark.rotation.into();
         let mouse_state = MouseState::None;
         Ok(Self {
-          textures,
-          mouse_scale,
-          mouse_mark,
-          mouse_rotation,
-          mouse_rx,
-          mouse_state
+            textures,
+            mouse_scale,
+            mouse_mark,
+            mouse_rotation,
+            mouse_rx,
+            mouse_state,
         })
     }
 
@@ -117,60 +114,50 @@ impl<'a> Device<'a> {
 
     fn get_mouse_state(&mut self) -> MouseState {
         match self.mouse_rx.try_recv() {
-            Ok(event) => {
-                match event {
-                    MouseEvent::LeftPressed => {
-                        match self.mouse_state {
-                            MouseState::Left | MouseState::None => {
-                                self.mouse_state = MouseState::Left;
-                                self.mouse_state
-                            },
-                            MouseState::Right | MouseState::Both => {
-                                self.mouse_state = MouseState::Both;
-                                self.mouse_state
-                            }
-                        }
-                    }, 
-                    MouseEvent::RightPressed => {
-                        match self.mouse_state {
-                            MouseState::Left | MouseState::Both => {
-                                self.mouse_state = MouseState::Both;
-                                self.mouse_state
-                            },
-                            MouseState::Right | MouseState::None => {
-                                self.mouse_state = MouseState::Right;
-                                self.mouse_state
-                            }
-                        }
-                    }, 
-                    MouseEvent::LeftReleased => {
-                        match self.mouse_state {
-                            MouseState::Left | MouseState::None => {
-                                self.mouse_state = MouseState::None;
-                                self.mouse_state
-                            },
-                            MouseState::Right | MouseState::Both => {
-                                self.mouse_state = MouseState::Right;
-                                self.mouse_state
-                            }
-                        }
-                    },
-                    MouseEvent::RightReleased => {
-                        match self.mouse_state {
-                            MouseState::Left | MouseState::Both => {
-                                self.mouse_state = MouseState::Left;
-                                self.mouse_state
-                            },
-                            MouseState::Right | MouseState::None => {
-                                self.mouse_state = MouseState::None;
-                                self.mouse_state
-                            }
-                        }
-                    },
-                    _ => self.mouse_state
-                }
+            Ok(event) => match event {
+                MouseEvent::LeftPressed => match self.mouse_state {
+                    MouseState::Left | MouseState::None => {
+                        self.mouse_state = MouseState::Left;
+                        self.mouse_state
+                    }
+                    MouseState::Right | MouseState::Both => {
+                        self.mouse_state = MouseState::Both;
+                        self.mouse_state
+                    }
+                },
+                MouseEvent::RightPressed => match self.mouse_state {
+                    MouseState::Left | MouseState::Both => {
+                        self.mouse_state = MouseState::Both;
+                        self.mouse_state
+                    }
+                    MouseState::Right | MouseState::None => {
+                        self.mouse_state = MouseState::Right;
+                        self.mouse_state
+                    }
+                },
+                MouseEvent::LeftReleased => match self.mouse_state {
+                    MouseState::Left | MouseState::None => {
+                        self.mouse_state = MouseState::None;
+                        self.mouse_state
+                    }
+                    MouseState::Right | MouseState::Both => {
+                        self.mouse_state = MouseState::Right;
+                        self.mouse_state
+                    }
+                },
+                MouseEvent::RightReleased => match self.mouse_state {
+                    MouseState::Left | MouseState::Both => {
+                        self.mouse_state = MouseState::Left;
+                        self.mouse_state
+                    }
+                    MouseState::Right | MouseState::None => {
+                        self.mouse_state = MouseState::None;
+                        self.mouse_state
+                    }
+                },
+                _ => self.mouse_state,
             },
-            Err(_err) => self.mouse_state
+            Err(_err) => self.mouse_state,
         }
     }
 

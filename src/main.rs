@@ -1,4 +1,3 @@
-
 #![windows_subsystem = "windows"]
 
 use log::error;

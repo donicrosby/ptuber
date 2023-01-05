@@ -1,14 +1,14 @@
+use device_query::MouseButton;
 use sfml::system::Vector2i;
 use windows::Win32::Foundation::HWND;
 use windows::Win32::Graphics::Gdi::{
     GetMonitorInfoW, MonitorFromWindow, HMONITOR, MONITORINFO, MONITOR_DEFAULTTONEAREST,
 };
 use windows::Win32::UI::WindowsAndMessaging::{GetForegroundWindow, GetWindowRect};
-use device_query::MouseButton;
 
+pub(crate) use super::MouseButtonType;
 use super::WindowFinder;
 use super::WindowFinderError;
-pub(crate) use super::MouseButtonType;
 
 #[derive(Debug, Clone)]
 pub struct WindowsWindowFinder {}

@@ -1,6 +1,6 @@
+use either::Either;
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
-use toml;
 use sfml::system::Vector2;
 use sfml::window::VideoMode;
 use std::fs::OpenOptions;
@@ -8,10 +8,10 @@ use std::io::prelude::*;
 use std::io::BufReader;
 use std::io::BufWriter;
 use std::path::{Path, PathBuf};
-use either::Either;
+use toml;
 
-use sfml::graphics::Color as SfmlColor;
 use crate::{default_config, default_skin_dir};
+use sfml::graphics::Color as SfmlColor;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Config {
@@ -64,7 +64,9 @@ impl Config {
                         .unwrap_or(0);
                     default
                 } else {
-                    let mut config = toml::from_str(&config_string).map_err(|_err| warn!("Could not parse config, using defaults...")).unwrap_or_default();
+                    let mut config = toml::from_str(&config_string)
+                        .map_err(|_err| warn!("Could not parse config, using defaults..."))
+                        .unwrap_or_default();
                     Self::set_paths_in_config(&mut config, config_path, images_path);
                     config
                 }
@@ -73,7 +75,7 @@ impl Config {
                 let mut default = Default::default();
                 Self::set_paths_in_config(&mut default, config_path, images_path);
                 default
-            },
+            }
         }
     }
 }
@@ -89,7 +91,17 @@ impl Default for Config {
         let anchors = Default::default();
         let mouse_mark = Default::default();
         let mouse_scale = Vector2::new(1.into(), 1.into());
-        Self { config_path, images_path, window, background, debug, avatar_below_arm, anchors, mouse_mark, mouse_scale }
+        Self {
+            config_path,
+            images_path,
+            window,
+            background,
+            debug,
+            avatar_below_arm,
+            anchors,
+            mouse_mark,
+            mouse_scale,
+        }
     }
 }
 
@@ -118,14 +130,14 @@ impl Default for WindowDimensions {
 #[serde(transparent)]
 pub struct IntOrFloat {
     #[serde(with = "either::serde_untagged")]
-    inner: Either<f32, isize>
+    inner: Either<f32, isize>,
 }
 
 impl From<IntOrFloat> for f32 {
     fn from(value: IntOrFloat) -> Self {
         match value.inner {
             Either::Left(float) => float,
-            Either::Right(int) => int as f32
+            Either::Right(int) => int as f32,
         }
     }
 }
@@ -133,18 +145,14 @@ impl From<IntOrFloat> for f32 {
 impl From<f32> for IntOrFloat {
     fn from(value: f32) -> Self {
         let inner = Either::Left(value);
-        Self {
-            inner
-        }
+        Self { inner }
     }
 }
 
 impl From<isize> for IntOrFloat {
     fn from(value: isize) -> Self {
         let inner = Either::Right(value);
-        Self {
-            inner
-        }
+        Self { inner }
     }
 }
 

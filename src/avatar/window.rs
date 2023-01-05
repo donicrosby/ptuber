@@ -1,15 +1,24 @@
-use super::{Avatar};
-use crate::PtuberResult;
+use super::Avatar;
 use crate::{Config, DEFAULT_CONFIG_NAME, DEFAULT_SKIN_DIR_NAME, MAX_FRAMERATE};
-use sfml::graphics::{RenderTarget, RenderWindow};
-use sfml::window::{Event, Style, Key};
-use std::path::{Path, PathBuf, MAIN_SEPARATOR};
+use crate::{PTuberError, PtuberResult};
 use log::debug;
+use rust_embed::RustEmbed;
+use sfml::graphics::{Image, RenderTarget, RenderWindow};
+use sfml::window::{Event, Key, Style};
+use std::path::{Path, PathBuf, MAIN_SEPARATOR};
+
+const EMBEDDED_ICON_PATH: &str = "icon.png";
+
+#[derive(RustEmbed)]
+#[folder = "assets/"]
+#[include = "*.png"]
+struct Assets;
 
 #[derive(Debug)]
 pub struct PtuberWindow<'a> {
     window: RenderWindow,
     avatar: Avatar<'a>,
+    icon: Image,
 }
 
 // fn is_left_key(key: Key) -> bool {
@@ -38,11 +47,15 @@ impl<'a> PtuberWindow<'a> {
             Style::TITLEBAR | Style::CLOSE,
             &Default::default(),
         );
+        let icon_bytes = Assets::get(EMBEDDED_ICON_PATH).ok_or(PTuberError::AssetGet)?;
+        debug!("Icon Bytes: {}", icon_bytes.data.len());
+        let icon = Image::from_memory(&icon_bytes.data).ok_or(PTuberError::AssetLoad)?;
         window.set_framerate_limit(MAX_FRAMERATE);
         let avatar = Avatar::new(skin_path, config)?;
         Ok(Self {
             window,
-            avatar
+            avatar,
+            icon,
         })
     }
 
@@ -50,6 +63,11 @@ impl<'a> PtuberWindow<'a> {
         let mut reload_config = false;
         let mut background_color = self.avatar.config().background.clone();
         self.avatar.start_input_grabbing();
+        let icon_size = self.icon.size();
+        unsafe {
+            self.window
+                .set_icon(icon_size.x, icon_size.y, &self.icon.pixel_data());
+        }
         while self.window.is_open() {
             while let Some(event) = self.window.poll_event() {
                 match event {
@@ -59,8 +77,14 @@ impl<'a> PtuberWindow<'a> {
                         self.avatar.stop_input_grabbing();
                         debug!("Stopped input grabbing!");
                         return Ok(());
-                    },
-                    Event::KeyPressed { code , alt: _alt, ctrl, shift: _shift, system: _system } => {
+                    }
+                    Event::KeyPressed {
+                        code,
+                        alt: _alt,
+                        ctrl,
+                        shift: _shift,
+                        system: _system,
+                    } => {
                         if code == Key::R && ctrl {
                             reload_config = true;
                         }
@@ -77,9 +101,7 @@ impl<'a> PtuberWindow<'a> {
             }
 
             self.window.clear(background_color.clone().into());
-            self.avatar
-                .draw(&mut self.window)?;
-
+            self.avatar.draw(&mut self.window)?;
             self.window.display();
         }
         Ok(())

@@ -1,3 +1,4 @@
+use device_query::MouseButton;
 use log::trace;
 use sfml::system::Vector2i;
 use std::sync::Arc;
@@ -5,11 +6,10 @@ use x11rb::protocol::randr::ConnectionExt as randrConnectionExt;
 use x11rb::protocol::xproto::ConnectionExt;
 use x11rb::protocol::xproto::Window;
 use x11rb::rust_connection::RustConnection;
-use device_query::MouseButton;
 
+pub(crate) use super::MouseButtonType;
 use super::WindowFinder;
 use super::WindowFinderError;
-pub(crate) use super::MouseButtonType;
 
 #[derive(Debug, Clone)]
 pub struct LinuxWindowFinder {

@@ -1,12 +1,12 @@
 mod errors;
 #[cfg(target_os = "linux")]
 mod linux;
+mod user_input;
 #[cfg(target_os = "windows")]
 mod windows;
-mod user_input;
 
 pub(crate) use self::errors::WindowFinderError;
-pub(crate) use self::user_input::{InputGrabber, InputGrabRunFlag, KeyboardEvent, MouseEvent};
+pub(crate) use self::user_input::{InputGrabRunFlag, InputGrabber, KeyboardEvent, MouseEvent};
 
 #[cfg(target_os = "linux")]
 pub(crate) use self::linux::LinuxWindowFinder as WindowFinderImpl;
@@ -21,7 +21,7 @@ pub enum MouseButtonType {
     Left,
     Middle,
     Right,
-    Unknown(usize)
+    Unknown(usize),
 }
 
 pub trait WindowFinder: Debug + DynClone {
@@ -37,7 +37,6 @@ pub trait WindowFinder: Debug + DynClone {
 }
 
 clone_trait_object!(WindowFinder);
-
 
 pub fn get_window_finder() -> Result<WindowFinderImpl, WindowFinderError> {
     Ok(WindowFinderImpl::new()?)

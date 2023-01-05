@@ -9,7 +9,10 @@ pub fn default_skin_dir() -> String {
 }
 
 pub fn default_config() -> String {
-    format!(".{}{}{}{}", MAIN_SEPARATOR, DEFAULT_SKIN_DIR_NAME, MAIN_SEPARATOR, DEFAULT_CONFIG_NAME)
+    format!(
+        ".{}{}{}{}",
+        MAIN_SEPARATOR, DEFAULT_SKIN_DIR_NAME, MAIN_SEPARATOR, DEFAULT_CONFIG_NAME
+    )
 }
 
 /// Ptuber vtuber simple rigger

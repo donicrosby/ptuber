@@ -1,17 +1,12 @@
-use sfml::graphics::{
-    RenderTarget, 
-    RenderWindow,
-    Sprite,
-};
+use sfml::graphics::{RenderTarget, RenderWindow, Sprite};
 use std::path::Path;
 use std::sync::mpsc::{channel, Sender};
 
-use super::{AvatarTextures, Arms};
+use super::{Arms, AvatarTextures};
 use crate::errors::Result;
 use crate::Config;
-use crate::{get_window_finder, WindowFinderImpl, WindowFinder};
-use crate::{InputGrabber, InputGrabRunFlag};
-
+use crate::{get_window_finder, WindowFinder, WindowFinderImpl};
+use crate::{InputGrabRunFlag, InputGrabber};
 
 #[derive(Debug)]
 pub(crate) struct Avatar<'a> {
@@ -20,9 +15,8 @@ pub(crate) struct Avatar<'a> {
     window_finder: WindowFinderImpl,
     config: Config,
     input_grabber: InputGrabber,
-    shutdown_tx: Sender<InputGrabRunFlag>
+    shutdown_tx: Sender<InputGrabRunFlag>,
 }
-
 
 impl<'a> Avatar<'a> {
     pub fn new(image_path: &Path, config: Config) -> Result<Self> {
@@ -34,14 +28,14 @@ impl<'a> Avatar<'a> {
         input_grabber.start(shutdown_rx, mouse_tx, keyboard_tx);
         let window_finder = get_window_finder()?;
         let arms = Arms::new(image_path, &config, keyboard_rx, mouse_rx)?;
-        
+
         Ok(Self {
             textures,
             window_finder,
             arms,
             config,
             input_grabber,
-            shutdown_tx
+            shutdown_tx,
         })
     }
 
@@ -65,18 +59,19 @@ impl<'a> Avatar<'a> {
     }
 
     pub fn start_input_grabbing(&self) {
-        self.shutdown_tx.send(InputGrabRunFlag::Run).expect("Could not start input grabber");
+        self.shutdown_tx
+            .send(InputGrabRunFlag::Run)
+            .expect("Could not start input grabber");
     }
 
     pub fn stop_input_grabbing(&mut self) {
-        self.shutdown_tx.send(InputGrabRunFlag::Halt).expect("Could not shutdown input grabber");
+        self.shutdown_tx
+            .send(InputGrabRunFlag::Halt)
+            .expect("Could not shutdown input grabber");
         self.input_grabber.shutdown();
     }
 
-    pub fn draw(
-        &mut self,
-        window: &mut RenderWindow,
-    ) -> Result<()> {
+    pub fn draw(&mut self, window: &mut RenderWindow) -> Result<()> {
         {
             let bg = self.background_sprite();
             window.draw(&bg);

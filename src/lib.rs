@@ -2,15 +2,19 @@ use clap::Parser;
 use log::debug;
 
 pub mod args;
-pub mod config;
-pub mod errors;
 mod avatar;
+pub mod config;
+mod errors;
 mod ui_util;
 
-pub(crate) use self::args::{DEFAULT_CONFIG_NAME, DEFAULT_SKIN_DIR_NAME};
-pub use self::errors::Result as PtuberResult;
-pub(crate) use self::ui_util::{get_window_finder, WindowFinderImpl, WindowFinder, WindowFinderError, InputGrabber, InputGrabRunFlag, KeyboardEvent, MouseEvent};
 pub(crate) use self::args::{default_config, default_skin_dir};
+pub(crate) use self::args::{DEFAULT_CONFIG_NAME, DEFAULT_SKIN_DIR_NAME};
+pub use self::errors::PTuberError;
+pub use self::errors::Result as PtuberResult;
+pub(crate) use self::ui_util::{
+    get_window_finder, InputGrabRunFlag, InputGrabber, KeyboardEvent, MouseEvent, WindowFinder,
+    WindowFinderError, WindowFinderImpl,
+};
 
 use self::args::Args;
 use self::avatar::PtuberWindow;

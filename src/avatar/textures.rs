@@ -32,10 +32,7 @@ impl AvatarTextures {
         let background = load_texture_from_file(images_path, BACKGROUND_IMAGE)?;
         let avatar = load_texture_from_file(images_path, AVATAR_IMAGE)?;
 
-        Ok(Self {
-            background,
-            avatar,
-        })
+        Ok(Self { background, avatar })
     }
 
     pub fn reload_textures(&mut self, images_path: &Path) -> SfmlResult<()> {
@@ -89,7 +86,7 @@ impl LeftArmTextures {
         let left = load_texture_from_file(images_path, LEFT_ARM_LEFT_IMAGE)?;
         let right = load_texture_from_file(images_path, LEFT_ARM_RIGHT_IMAGE)?;
         let up = load_texture_from_file(images_path, LEFT_ARM_UP_IMAGE)?;
-       
+
         self.left = left;
         self.right = right;
         self.up = up;
@@ -130,7 +127,7 @@ impl MouseTextures {
         self.mouse_l = mouse_l;
         self.mouse_r = mouse_r;
         self.mouse_lr = mouse_lr;
-        
+
         Ok(())
     }
 }

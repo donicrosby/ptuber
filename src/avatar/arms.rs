@@ -1,23 +1,17 @@
-use std::path::Path;
+use device_query::Keycode;
 use log::trace;
 use sfml::graphics::{
-    Sprite, 
-    RenderWindow, 
-    CircleShape, 
-    Transformable,
-    Shape,
-    Color,
-    RenderTarget
+    CircleShape, Color, RenderTarget, RenderWindow, Shape, Sprite, Transformable,
 };
 use sfml::system::Vector2f;
-use std::sync::mpsc::Receiver;
 use std::collections::HashSet;
-use device_query::Keycode;
+use std::path::Path;
+use std::sync::mpsc::Receiver;
 
-use crate::{KeyboardEvent, MouseEvent};
-use super::{ArmTextures, SfmlResult, Device};
-use crate::Config;
+use super::{ArmTextures, Device, SfmlResult};
 use crate::errors::Result;
+use crate::Config;
+use crate::{KeyboardEvent, MouseEvent};
 
 const TO_DEGREE: f32 = 180.0 / std::f32::consts::PI;
 
@@ -42,7 +36,12 @@ pub struct Arms<'a> {
 }
 
 impl<'a> Arms<'a> {
-    pub fn new(images_path: &Path, config: &Config, keyboard_rx: Receiver<KeyboardEvent>, mouse_rx: Receiver<MouseEvent>) -> SfmlResult<Self> {
+    pub fn new(
+        images_path: &Path,
+        config: &Config,
+        keyboard_rx: Receiver<KeyboardEvent>,
+        mouse_rx: Receiver<MouseEvent>,
+    ) -> SfmlResult<Self> {
         let textures = ArmTextures::new(images_path)?;
         let device = Device::new(images_path, config, mouse_rx)?;
         let (anchor_mark, hand_mark) = Self::setup_debug(config);
@@ -103,9 +102,8 @@ impl<'a> Arms<'a> {
     }
 
     fn get_right_arm(&self, hand_pos: Vector2f) -> Sprite {
-
         let arm_origin = self.arm_offset;
-        let mut arm= self.right_arm_sprite();
+        let mut arm = self.right_arm_sprite();
         arm.set_origin(arm_origin);
         arm.set_position(self.anchor);
 
@@ -125,13 +123,10 @@ impl<'a> Arms<'a> {
 
     pub fn draw_right_arm(&mut self, mouse_pos: Vector2f, window: &mut RenderWindow) {
         trace!("Mouse Pos{{ X: {}, Y: {} }}", mouse_pos.x, mouse_pos.y);
-        let transform = {
-            self.device.get_hand_transform()
-        };
+        let transform = { self.device.get_hand_transform() };
 
         let hand_pos = transform.transform_point(mouse_pos);
         trace!("Hand Pos{{ X: {}, Y: {} }}", hand_pos.x, hand_pos.y);
-        
 
         self.hand_mark.set_position(hand_pos);
         self.device.draw(hand_pos, window);
@@ -145,7 +140,7 @@ impl<'a> Arms<'a> {
                 match event {
                     KeyboardEvent::KeyPressed(key) => {
                         self.keys_currently_pressed.insert(key);
-                    },
+                    }
                     KeyboardEvent::KeyReleased(key) => {
                         self.keys_currently_pressed.remove(&key);
                     }
@@ -159,10 +154,8 @@ impl<'a> Arms<'a> {
                 }
                 self.left_arm_state = arm;
                 arm
-            },
-            Err(_err) => {
-                self.left_arm_state
             }
+            Err(_err) => self.left_arm_state,
         }
     }
 
