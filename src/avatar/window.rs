@@ -6,6 +6,8 @@ use rust_embed::RustEmbed;
 use sfml::graphics::{Image, RenderTarget, RenderWindow};
 use sfml::window::{Event, Key, Style};
 use std::path::{Path, PathBuf, MAIN_SEPARATOR};
+use std::thread::sleep;
+use std::time::{Duration, Instant};
 
 const EMBEDDED_ICON_PATH: &str = "icon.png";
 
@@ -19,6 +21,7 @@ pub struct PtuberWindow<'a> {
     window: RenderWindow,
     avatar: Avatar<'a>,
     icon: Image,
+    refresh_rate: Duration,
 }
 
 // fn is_left_key(key: Key) -> bool {
@@ -52,10 +55,12 @@ impl<'a> PtuberWindow<'a> {
         let icon = Image::from_memory(&icon_bytes.data).ok_or(PTuberError::AssetLoad)?;
         window.set_framerate_limit(MAX_FRAMERATE);
         let avatar = Avatar::new(skin_path, config)?;
+        let refresh_rate = Duration::from_secs_f32(1.0 / MAX_FRAMERATE as f32);
         Ok(Self {
             window,
             avatar,
             icon,
+            refresh_rate,
         })
     }
 
@@ -68,6 +73,8 @@ impl<'a> PtuberWindow<'a> {
             self.window
                 .set_icon(icon_size.x, icon_size.y, &self.icon.pixel_data());
         }
+        let mut now = Instant::now();
+        let mut elapsed;
         while self.window.is_open() {
             while let Some(event) = self.window.poll_event() {
                 match event {
@@ -103,6 +110,11 @@ impl<'a> PtuberWindow<'a> {
             self.window.clear(background_color.clone().into());
             self.avatar.draw(&mut self.window)?;
             self.window.display();
+            elapsed = now.elapsed();
+            if elapsed < self.refresh_rate {
+                sleep(self.refresh_rate - elapsed);
+            }
+            now = Instant::now();
         }
         Ok(())
     }

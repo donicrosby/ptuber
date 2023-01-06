@@ -1,4 +1,3 @@
-use device_query::MouseButton;
 use sfml::system::Vector2i;
 use windows::Win32::Foundation::HWND;
 use windows::Win32::Graphics::Gdi::{
@@ -6,7 +5,6 @@ use windows::Win32::Graphics::Gdi::{
 };
 use windows::Win32::UI::WindowsAndMessaging::{GetForegroundWindow, GetWindowRect};
 
-pub(crate) use super::MouseButtonType;
 use super::WindowFinder;
 use super::WindowFinderError;
 
@@ -67,16 +65,5 @@ impl WindowFinder for WindowsWindowFinder {
             info.rcMonitor.right - info.rcMonitor.left,
             info.rcMonitor.bottom - info.rcMonitor.top,
         ))
-    }
-}
-
-impl From<MouseButton> for MouseButtonType {
-    fn from(value: MouseButton) -> Self {
-        match value {
-            1 => MouseButtonType::Left,
-            2 => MouseButtonType::Right,
-            3 => MouseButtonType::Middle,
-            u => MouseButtonType::Unknown(u),
-        }
     }
 }

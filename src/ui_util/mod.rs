@@ -17,13 +17,6 @@ use core::fmt::Debug;
 use dyn_clone::{clone_trait_object, DynClone};
 use sfml::system::{Vector2f, Vector2i};
 
-pub enum MouseButtonType {
-    Left,
-    Middle,
-    Right,
-    Unknown(usize),
-}
-
 pub trait WindowFinder: Debug + DynClone {
     fn get_focused_window_size(&self) -> Result<Vector2i, WindowFinderError>;
     fn get_cursor_position(&self) -> Result<Vector2f, WindowFinderError> {

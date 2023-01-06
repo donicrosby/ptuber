@@ -1,5 +1,5 @@
-use device_query::Keycode;
 use log::trace;
+use rdev::Key;
 use sfml::graphics::{
     CircleShape, Color, RenderTarget, RenderWindow, Shape, Sprite, Transformable,
 };
@@ -31,7 +31,7 @@ pub struct Arms<'a> {
     hand_mark: CircleShape<'a>,
     anchor_mark: CircleShape<'a>,
     keyboard_rx: Receiver<KeyboardEvent>,
-    keys_currently_pressed: HashSet<Keycode>,
+    keys_currently_pressed: HashSet<Key>,
     left_arm_state: LeftArmState,
 }
 

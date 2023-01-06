@@ -1,4 +1,3 @@
-use device_query::MouseButton;
 use log::trace;
 use sfml::system::Vector2i;
 use std::sync::Arc;
@@ -7,7 +6,6 @@ use x11rb::protocol::xproto::ConnectionExt;
 use x11rb::protocol::xproto::Window;
 use x11rb::rust_connection::RustConnection;
 
-pub(crate) use super::MouseButtonType;
 use super::WindowFinder;
 use super::WindowFinderError;
 
@@ -47,16 +45,5 @@ impl WindowFinder for LinuxWindowFinder {
         trace!("Screen Info: {:?}", screen_info);
         let screen = screen_info.modes[0];
         Ok(Vector2i::new(screen.width.into(), screen.height.into()))
-    }
-}
-
-impl From<MouseButton> for MouseButtonType {
-    fn from(value: MouseButton) -> Self {
-        match value {
-            1 => MouseButtonType::Left,
-            2 => MouseButtonType::Middle,
-            3 => MouseButtonType::Right,
-            u => MouseButtonType::Unknown(u),
-        }
     }
 }
