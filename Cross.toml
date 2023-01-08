@@ -2,4 +2,4 @@
 pre-build = "./scripts/install-sfml-dev.sh"
 
 [target.x86_64-pc-windows-gnu.env]
-passthrough = ["SFML_INCLUDE_DIR", "SFML_LIBS_DIR", "SFML_STATIC", "CARGO_TARGET_X86_64_PC_WINDOWS_GNU_RUSTFLAGS"]
+passthrough = ["SFML_INCLUDE_DIR", "SFML_LIBS_DIR", "SFML_STATIC", "SFML_STDCPP_STATIC"]

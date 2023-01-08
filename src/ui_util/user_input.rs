@@ -1,10 +1,10 @@
-use log::{debug, warn, info};
+use log::{debug, info, warn};
 use rdev::{listen, Button, Event, EventType, Key};
+use std::panic;
 use std::sync::mpsc::{Receiver, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::thread::JoinHandle;
-use std::panic;
 
 #[derive(Debug)]
 pub enum MouseEvent {
@@ -137,7 +137,7 @@ impl InputGrabber {
             if let Err(_) = thread.join() {
                 info!("Shutting down ignoring input thread panic...");
             }
-        
+
             debug!("Thread joined!");
         }
     }
