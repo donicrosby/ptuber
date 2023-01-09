@@ -1,9 +1,10 @@
+use log::warn;
 use sfml::graphics::{
     Color, RectangleShape, RenderTarget, RenderWindow, Shape, Sprite, Transform, Transformable,
 };
 use sfml::system::Vector2f;
 use std::path::Path;
-use std::sync::mpsc::Receiver;
+use std::sync::mpsc::{Receiver, TryRecvError};
 
 use super::{MouseTextures, SfmlResult, TextureContainer};
 use crate::errors::Result;
@@ -113,52 +114,52 @@ impl<'a> Device<'a> {
     }
 
     fn get_mouse_state(&mut self) -> MouseState {
-        match self.mouse_rx.try_recv() {
-            Ok(event) => match event {
-                MouseEvent::LeftPressed => match self.mouse_state {
-                    MouseState::Left | MouseState::None => {
-                        self.mouse_state = MouseState::Left;
-                        self.mouse_state
-                    }
-                    MouseState::Right | MouseState::Both => {
-                        self.mouse_state = MouseState::Both;
-                        self.mouse_state
-                    }
+        loop {
+            match self.mouse_rx.try_recv() {
+                Ok(event) => match event {
+                    MouseEvent::LeftPressed => match self.mouse_state {
+                        MouseState::Left | MouseState::None => {
+                            self.mouse_state = MouseState::Left;
+                        }
+                        MouseState::Right | MouseState::Both => {
+                            self.mouse_state = MouseState::Both;
+                        }
+                    },
+                    MouseEvent::RightPressed => match self.mouse_state {
+                        MouseState::Left | MouseState::Both => {
+                            self.mouse_state = MouseState::Both;
+                        }
+                        MouseState::Right | MouseState::None => {
+                            self.mouse_state = MouseState::Right;
+                        }
+                    },
+                    MouseEvent::LeftReleased => match self.mouse_state {
+                        MouseState::Left | MouseState::None => {
+                            self.mouse_state = MouseState::None;
+                        }
+                        MouseState::Right | MouseState::Both => {
+                            self.mouse_state = MouseState::Right;
+                        }
+                    },
+                    MouseEvent::RightReleased => match self.mouse_state {
+                        MouseState::Left | MouseState::Both => {
+                            self.mouse_state = MouseState::Left;
+                        }
+                        MouseState::Right | MouseState::None => {
+                            self.mouse_state = MouseState::None;
+                        }
+                    },
+                    _ => {}
                 },
-                MouseEvent::RightPressed => match self.mouse_state {
-                    MouseState::Left | MouseState::Both => {
-                        self.mouse_state = MouseState::Both;
-                        self.mouse_state
+                Err(err) => {
+                    if err == TryRecvError::Disconnected {
+                        warn!("Mouse input channel disconnected!");
                     }
-                    MouseState::Right | MouseState::None => {
-                        self.mouse_state = MouseState::Right;
-                        self.mouse_state
-                    }
-                },
-                MouseEvent::LeftReleased => match self.mouse_state {
-                    MouseState::Left | MouseState::None => {
-                        self.mouse_state = MouseState::None;
-                        self.mouse_state
-                    }
-                    MouseState::Right | MouseState::Both => {
-                        self.mouse_state = MouseState::Right;
-                        self.mouse_state
-                    }
-                },
-                MouseEvent::RightReleased => match self.mouse_state {
-                    MouseState::Left | MouseState::Both => {
-                        self.mouse_state = MouseState::Left;
-                        self.mouse_state
-                    }
-                    MouseState::Right | MouseState::None => {
-                        self.mouse_state = MouseState::None;
-                        self.mouse_state
-                    }
-                },
-                _ => self.mouse_state,
-            },
-            Err(_err) => self.mouse_state,
+                    break;
+                }
+            }
         }
+        self.mouse_state
     }
 
     pub fn draw(&mut self, hand_pos: Vector2f, window: &mut RenderWindow) {

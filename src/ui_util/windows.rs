@@ -1,3 +1,4 @@
+use device_query::MouseButton;
 use sfml::system::Vector2i;
 use windows::Win32::Foundation::HWND;
 use windows::Win32::Graphics::Gdi::{
@@ -7,6 +8,21 @@ use windows::Win32::UI::WindowsAndMessaging::{GetForegroundWindow, GetWindowRect
 
 use super::WindowFinder;
 use super::WindowFinderError;
+
+use super::MouseButtonImpl;
+
+impl From<MouseButton> for MouseButtonImpl {
+    fn from(value: MouseButton) -> Self {
+        match value {
+            1 => MouseButtonImpl::Left,
+            2 => MouseButtonImpl::Right,
+            3 => MouseButtonImpl::Middle,
+            4 => MouseButtonImpl::XButton1,
+            5 => MouseButtonImpl::XButton2,
+            v => MouseButtonImpl::Unknown(v),
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct WindowsWindowFinder {}

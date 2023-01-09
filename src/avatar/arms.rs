@@ -1,12 +1,12 @@
-use log::trace;
-use rdev::Key;
+use device_query::Keycode;
+use log::{trace, warn};
 use sfml::graphics::{
     CircleShape, Color, RenderTarget, RenderWindow, Shape, Sprite, Transformable,
 };
 use sfml::system::Vector2f;
 use std::collections::HashSet;
 use std::path::Path;
-use std::sync::mpsc::Receiver;
+use std::sync::mpsc::{Receiver, TryRecvError};
 
 use super::{ArmTextures, Device, SfmlResult, TextureContainer};
 use crate::errors::Result;
@@ -31,7 +31,7 @@ pub struct Arms<'a> {
     hand_mark: CircleShape<'a>,
     anchor_mark: CircleShape<'a>,
     keyboard_rx: Receiver<KeyboardEvent>,
-    keys_currently_pressed: HashSet<Key>,
+    keys_currently_pressed: HashSet<Keycode>,
     left_arm_state: LeftArmState,
 }
 
@@ -135,28 +135,33 @@ impl<'a> Arms<'a> {
 
     fn get_left_arm_state(&mut self) -> LeftArmState {
         let mut arm = LeftArmState::Up;
-        match self.keyboard_rx.try_recv() {
-            Ok(event) => {
-                match event {
+        loop {
+            match self.keyboard_rx.try_recv() {
+                Ok(event) => match event {
                     KeyboardEvent::KeyPressed(key) => {
                         self.keys_currently_pressed.insert(key);
                     }
                     KeyboardEvent::KeyReleased(key) => {
                         self.keys_currently_pressed.remove(&key);
                     }
-                }
-                if !self.keys_currently_pressed.is_empty() {
-                    if self.keys_currently_pressed.len() % 2 == 0 {
-                        arm = LeftArmState::Left;
-                    } else {
-                        arm = LeftArmState::Right;
+                },
+                Err(err) => {
+                    if err == TryRecvError::Disconnected {
+                        warn!("Arm channel disconnected!")
                     }
+                    break;
                 }
-                self.left_arm_state = arm;
-                arm
             }
-            Err(_err) => self.left_arm_state,
         }
+        if !self.keys_currently_pressed.is_empty() {
+            if self.keys_currently_pressed.len() % 2 == 0 {
+                arm = LeftArmState::Left;
+            } else {
+                arm = LeftArmState::Right;
+            }
+        }
+        self.left_arm_state = arm;
+        arm
     }
 
     pub fn draw_left_arm(&mut self, window: &mut RenderWindow) {

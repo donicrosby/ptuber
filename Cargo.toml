@@ -19,7 +19,7 @@ log = "0.4"
 cfg-if = "1"
 dyn-clone = "1"
 env_logger = "0.10"
-rdev = "0.5"
+device_query = "1"
 either = { version = "1", features = ["serde"] }
 rust-embed = { version = "6.4.2", features = ["include-exclude"] }
 

@@ -1,5 +1,5 @@
 mod errors;
-#[cfg(target_os = "linux")]
+#[cfg(all(unix, target_os = "linux"))]
 mod linux;
 mod user_input;
 #[cfg(target_os = "windows")]
@@ -8,14 +8,25 @@ mod windows;
 pub(crate) use self::errors::WindowFinderError;
 pub(crate) use self::user_input::{InputGrabRunFlag, InputGrabber, KeyboardEvent, MouseEvent};
 
-#[cfg(target_os = "linux")]
+#[cfg(all(unix, target_os = "linux"))]
 pub(crate) use self::linux::LinuxWindowFinder as WindowFinderImpl;
-#[cfg(target_os = "windows")]
+#[cfg(windows)]
 pub(crate) use self::windows::WindowsWindowFinder as WindowFinderImpl;
 
-use core::fmt::Debug;
 use dyn_clone::{clone_trait_object, DynClone};
 use sfml::system::{Vector2f, Vector2i};
+use std::fmt::Debug;
+
+#[repr(usize)]
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
+pub(crate) enum MouseButtonImpl {
+    Left = 1,
+    Middle = 2,
+    Right = 3,
+    XButton1 = 4,
+    XButton2 = 5,
+    Unknown(usize),
+}
 
 pub trait WindowFinder: Debug + DynClone {
     fn get_focused_window_size(&self) -> Result<Vector2i, WindowFinderError>;
@@ -32,5 +43,6 @@ pub trait WindowFinder: Debug + DynClone {
 clone_trait_object!(WindowFinder);
 
 pub fn get_window_finder() -> Result<WindowFinderImpl, WindowFinderError> {
-    Ok(WindowFinderImpl::new()?)
+    let finder = WindowFinderImpl::new()?;
+    Ok(finder)
 }
