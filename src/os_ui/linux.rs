@@ -1,4 +1,3 @@
-use device_query::MouseButton;
 use log::trace;
 use sfml::system::Vector2i;
 use std::sync::Arc;
@@ -7,22 +6,7 @@ use x11rb::protocol::xproto::ConnectionExt;
 use x11rb::protocol::xproto::Window;
 use x11rb::rust_connection::RustConnection;
 
-use super::MouseButtonImpl;
-use super::WindowFinder;
-use super::WindowFinderError;
-
-impl From<MouseButton> for MouseButtonImpl {
-    fn from(value: MouseButton) -> Self {
-        match value {
-            1 => MouseButtonImpl::Left,
-            2 => MouseButtonImpl::Middle,
-            3 => MouseButtonImpl::Right,
-            4 => MouseButtonImpl::XButton1,
-            5 => MouseButtonImpl::XButton2,
-            v => MouseButtonImpl::Unknown(v),
-        }
-    }
-}
+use super::{WindowFinder, WindowFinderError};
 
 #[derive(Debug, Clone)]
 pub struct LinuxWindowFinder {

@@ -2,9 +2,7 @@ use cfg_if::cfg_if;
 use log::error;
 use ptuber::{PTuber, PtuberResult as Result};
 #[cfg(windows)]
-use windows::Win32::{
-    System::Console::{AttachConsole, FreeConsole, ATTACH_PARENT_PROCESS}
-};
+use windows::Win32::System::Console::{AttachConsole, FreeConsole, ATTACH_PARENT_PROCESS};
 
 cfg_if! {
     if #[cfg(windows)] {
@@ -15,13 +13,11 @@ cfg_if! {
             }
         }
     }
-    
+
 }
 
-
-
 fn main() -> Result<()> {
-    cfg_if::cfg_if!{
+    cfg_if::cfg_if! {
         if #[cfg(windows)] {
             attach_to_console();
         }

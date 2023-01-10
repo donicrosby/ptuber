@@ -1,17 +1,15 @@
-use device_query::Keycode;
-use log::{trace, warn};
+use log::trace;
 use sfml::graphics::{
     CircleShape, Color, RenderTarget, RenderWindow, Shape, Sprite, Transformable,
 };
 use sfml::system::Vector2f;
-use std::collections::HashSet;
 use std::path::Path;
-use std::sync::mpsc::{Receiver, TryRecvError};
 
 use super::{ArmTextures, Device, SfmlResult, TextureContainer};
 use crate::errors::Result;
+use crate::view_models::{DeviceViewModelImpl, KeyboardViewModelImpl};
 use crate::Config;
-use crate::{KeyboardEvent, MouseEvent};
+use crate::KeyboardState;
 
 const TO_DEGREE: f32 = 180.0 / std::f32::consts::PI;
 
@@ -22,6 +20,16 @@ pub enum LeftArmState {
     Up,
 }
 
+impl From<KeyboardState> for LeftArmState {
+    fn from(value: KeyboardState) -> Self {
+        match value {
+            KeyboardState::Up => Self::Up,
+            KeyboardState::Right => Self::Right,
+            KeyboardState::Left => Self::Left,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Arms<'a> {
     textures: ArmTextures,
@@ -30,25 +38,15 @@ pub struct Arms<'a> {
     anchor: Vector2f,
     hand_mark: CircleShape<'a>,
     anchor_mark: CircleShape<'a>,
-    keyboard_rx: Receiver<KeyboardEvent>,
-    keys_currently_pressed: HashSet<Keycode>,
-    left_arm_state: LeftArmState,
 }
 
 impl<'a> Arms<'a> {
-    pub fn new(
-        images_path: &Path,
-        config: &Config,
-        keyboard_rx: Receiver<KeyboardEvent>,
-        mouse_rx: Receiver<MouseEvent>,
-    ) -> SfmlResult<Self> {
+    pub fn new(images_path: &Path, config: &Config) -> SfmlResult<Self> {
         let textures = ArmTextures::new(images_path)?;
-        let device = Device::new(images_path, config, mouse_rx)?;
+        let device = Device::new(images_path, config)?;
         let (anchor_mark, hand_mark) = Self::setup_debug(config);
         let arm_offset = config.anchors.arm_offset.into_other();
         let anchor = config.anchors.anchor.into_other();
-        let keys_currently_pressed = HashSet::new();
-        let left_arm_state = LeftArmState::Up;
         Ok(Self {
             textures,
             device,
@@ -56,9 +54,6 @@ impl<'a> Arms<'a> {
             anchor,
             anchor_mark,
             hand_mark,
-            keyboard_rx,
-            keys_currently_pressed,
-            left_arm_state,
         })
     }
 
@@ -121,7 +116,12 @@ impl<'a> Arms<'a> {
         arm.clone()
     }
 
-    pub fn draw_right_arm(&mut self, mouse_pos: Vector2f, window: &mut RenderWindow) {
+    pub fn draw_right_arm(
+        &mut self,
+        mouse_pos: Vector2f,
+        window: &mut RenderWindow,
+        mouse: &DeviceViewModelImpl,
+    ) {
         trace!("Mouse Pos{{ X: {}, Y: {} }}", mouse_pos.x, mouse_pos.y);
         let transform = { self.device.get_hand_transform() };
 
@@ -129,43 +129,12 @@ impl<'a> Arms<'a> {
         trace!("Hand Pos{{ X: {}, Y: {} }}", hand_pos.x, hand_pos.y);
 
         self.hand_mark.set_position(hand_pos);
-        self.device.draw(hand_pos, window);
+        self.device.draw(hand_pos, window, mouse);
         window.draw(&self.get_right_arm(hand_pos))
     }
 
-    fn get_left_arm_state(&mut self) -> LeftArmState {
-        let mut arm = LeftArmState::Up;
-        loop {
-            match self.keyboard_rx.try_recv() {
-                Ok(event) => match event {
-                    KeyboardEvent::KeyPressed(key) => {
-                        self.keys_currently_pressed.insert(key);
-                    }
-                    KeyboardEvent::KeyReleased(key) => {
-                        self.keys_currently_pressed.remove(&key);
-                    }
-                },
-                Err(err) => {
-                    if err == TryRecvError::Disconnected {
-                        warn!("Arm channel disconnected!")
-                    }
-                    break;
-                }
-            }
-        }
-        if !self.keys_currently_pressed.is_empty() {
-            if self.keys_currently_pressed.len() % 2 == 0 {
-                arm = LeftArmState::Left;
-            } else {
-                arm = LeftArmState::Right;
-            }
-        }
-        self.left_arm_state = arm;
-        arm
-    }
-
-    pub fn draw_left_arm(&mut self, window: &mut RenderWindow) {
-        let sprite = match self.get_left_arm_state() {
+    pub fn draw_left_arm(&mut self, window: &mut RenderWindow, keyboard: &KeyboardViewModelImpl) {
+        let sprite = match keyboard.keyboard_state().into() {
             LeftArmState::Up => self.left_arm_up_sprite(),
             LeftArmState::Left => self.left_arm_left_sprite(),
             LeftArmState::Right => self.left_arm_right_sprite(),

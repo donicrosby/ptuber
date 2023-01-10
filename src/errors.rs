@@ -1,3 +1,4 @@
+use super::UtilError;
 use crate::avatar::SfmlError;
 use crate::config::ConfigError;
 use crate::WindowFinderError;
@@ -16,6 +17,8 @@ pub enum PTuberError {
     AssetGet,
     #[error("loading static asset to image")]
     AssetLoad,
+    #[error("util error")]
+    UtilError(#[from] UtilError),
 }
 
 pub type Result<T> = result::Result<T, PTuberError>;

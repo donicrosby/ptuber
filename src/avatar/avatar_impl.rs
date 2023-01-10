@@ -1,41 +1,27 @@
 use sfml::graphics::{RenderTarget, RenderWindow, Sprite};
 use std::path::Path;
-use std::sync::mpsc::{channel, Sender};
 
 use super::{Arms, AvatarTextures, TextureContainer};
 use crate::errors::Result;
+use crate::view_models::{DeviceViewModelImpl, KeyboardViewModelImpl};
 use crate::Config;
-use crate::{get_window_finder, WindowFinder, WindowFinderImpl};
-use crate::{InputGrabRunFlag, InputGrabber};
 
 #[derive(Debug)]
 pub(crate) struct Avatar<'a> {
     textures: AvatarTextures,
     arms: Arms<'a>,
-    window_finder: WindowFinderImpl,
     config: Config,
-    input_grabber: InputGrabber,
-    shutdown_tx: Sender<InputGrabRunFlag>,
 }
 
 impl<'a> Avatar<'a> {
     pub fn new(image_path: &Path, config: Config) -> Result<Self> {
         let textures = AvatarTextures::new(image_path)?;
-        let (mouse_tx, mouse_rx) = channel();
-        let (keyboard_tx, keyboard_rx) = channel();
-        let (shutdown_tx, shutdown_rx) = channel();
-        let mut input_grabber = InputGrabber::new();
-        input_grabber.start(shutdown_rx, mouse_tx, keyboard_tx);
-        let window_finder = get_window_finder()?;
-        let arms = Arms::new(image_path, &config, keyboard_rx, mouse_rx)?;
+        let arms = Arms::new(image_path, &config)?;
 
         Ok(Self {
             textures,
-            window_finder,
             arms,
             config,
-            input_grabber,
-            shutdown_tx,
         })
     }
 
@@ -58,33 +44,25 @@ impl<'a> Avatar<'a> {
         Sprite::with_texture(&self.textures.avatar)
     }
 
-    pub fn start_input_grabbing(&self) {
-        self.shutdown_tx
-            .send(InputGrabRunFlag::Run)
-            .expect("Could not start input grabber");
-    }
-
-    pub fn stop_input_grabbing(&mut self) {
-        self.shutdown_tx
-            .send(InputGrabRunFlag::Halt)
-            .expect("Could not shutdown input grabber");
-        self.input_grabber.shutdown();
-    }
-
-    pub fn draw(&mut self, window: &mut RenderWindow) -> Result<()> {
+    pub fn draw(
+        &mut self,
+        window: &mut RenderWindow,
+        keyboard: &KeyboardViewModelImpl,
+        mouse: &DeviceViewModelImpl,
+    ) -> Result<()> {
         {
             let bg = self.background_sprite();
             window.draw(&bg);
         }
-        let mouse_pos = self.window_finder.get_cursor_position()?;
+        let mouse_pos = mouse.position();
         if self.config.avatar_below_arm {
             {
                 let avatar = self.avatar_sprite();
                 window.draw(&avatar);
             }
-            self.arms.draw_right_arm(mouse_pos, window);
+            self.arms.draw_right_arm(mouse_pos, window, mouse);
         } else {
-            self.arms.draw_right_arm(mouse_pos, window);
+            self.arms.draw_right_arm(mouse_pos, window, mouse);
 
             {
                 let avatar = self.avatar_sprite();
@@ -92,7 +70,7 @@ impl<'a> Avatar<'a> {
             }
         }
 
-        self.arms.draw_left_arm(window);
+        self.arms.draw_left_arm(window, keyboard);
 
         if self.config.debug {
             self.arms.draw_debug(window);

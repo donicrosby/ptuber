@@ -1,6 +1,7 @@
 use super::Avatar;
+use crate::user_input::UserInputMonitor;
 use crate::{Config, DEFAULT_CONFIG_NAME, DEFAULT_SKIN_DIR_NAME, MAX_FRAMERATE};
-use crate::{PTuberError, PtuberResult};
+use crate::{DeviceViewModelImpl, KeyboardViewModelImpl, PTuberError, PtuberResult};
 use log::debug;
 use rust_embed::RustEmbed;
 use sfml::graphics::{Image, RenderTarget, RenderWindow};
@@ -59,23 +60,25 @@ impl<'a> PtuberWindow<'a> {
         })
     }
 
-    pub fn display(&mut self) -> PtuberResult<()> {
+    pub fn display(
+        &mut self,
+        keyboard: &KeyboardViewModelImpl,
+        mouse: &DeviceViewModelImpl,
+        events: &mut UserInputMonitor
+    ) -> PtuberResult<()> {
         let mut reload_config = false;
         let mut background_color = self.avatar.config().background.clone();
-        self.avatar.start_input_grabbing();
         let icon_size = self.icon.size();
         unsafe {
             self.window
                 .set_icon(icon_size.x, icon_size.y, self.icon.pixel_data());
         }
         while self.window.is_open() {
+            events.get_events();
             while let Some(event) = self.window.poll_event() {
                 match event {
                     Event::Closed => {
                         self.window.close();
-                        debug!("Stopping input grabbing thread!");
-                        self.avatar.stop_input_grabbing();
-                        debug!("Stopped input grabbing!");
                         return Ok(());
                     }
                     Event::KeyPressed {
@@ -92,6 +95,7 @@ impl<'a> PtuberWindow<'a> {
                     _ => {}
                 }
             }
+
             if reload_config {
                 let old_config = self.avatar.config();
                 let new_config = Config::new(&old_config.config_path, &old_config.images_path);
@@ -101,7 +105,7 @@ impl<'a> PtuberWindow<'a> {
             }
 
             self.window.clear(background_color.clone().into());
-            self.avatar.draw(&mut self.window)?;
+            self.avatar.draw(&mut self.window, keyboard, mouse)?;
             self.window.display();
         }
         Ok(())

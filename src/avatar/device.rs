@@ -1,14 +1,13 @@
-use log::warn;
 use sfml::graphics::{
     Color, RectangleShape, RenderTarget, RenderWindow, Shape, Sprite, Transform, Transformable,
 };
 use sfml::system::Vector2f;
 use std::path::Path;
-use std::sync::mpsc::{Receiver, TryRecvError};
 
 use super::{MouseTextures, SfmlResult, TextureContainer};
 use crate::errors::Result;
-use crate::{Config, MouseEvent};
+use crate::view_models::DeviceViewModelImpl;
+use crate::{Config, MouseButtonState};
 
 #[derive(Debug, Copy, Clone)]
 pub enum MouseState {
@@ -18,34 +17,36 @@ pub enum MouseState {
     Both,
 }
 
+impl From<MouseButtonState> for MouseState {
+    fn from(value: MouseButtonState) -> Self {
+        match value {
+            MouseButtonState::None => MouseState::None,
+            MouseButtonState::Left => MouseState::Left,
+            MouseButtonState::Right => MouseState::Right,
+            MouseButtonState::Both => MouseState::Both,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Device<'a> {
     textures: MouseTextures,
     mouse_scale: Vector2f,
     mouse_mark: RectangleShape<'a>,
     mouse_rotation: f32,
-    mouse_rx: Receiver<MouseEvent>,
-    mouse_state: MouseState,
 }
 
 impl<'a> Device<'a> {
-    pub fn new(
-        images_path: &Path,
-        config: &Config,
-        mouse_rx: Receiver<MouseEvent>,
-    ) -> SfmlResult<Self> {
+    pub fn new(images_path: &Path, config: &Config) -> SfmlResult<Self> {
         let textures = MouseTextures::new(images_path)?;
         let mouse_scale = config.mouse_scale.into_other();
         let mouse_mark = Self::setup_debug(config);
         let mouse_rotation = config.mouse_mark.rotation.into();
-        let mouse_state = MouseState::None;
         Ok(Self {
             textures,
             mouse_scale,
             mouse_mark,
             mouse_rotation,
-            mouse_rx,
-            mouse_state,
         })
     }
 
@@ -113,57 +114,13 @@ impl<'a> Device<'a> {
         device
     }
 
-    fn get_mouse_state(&mut self) -> MouseState {
-        loop {
-            match self.mouse_rx.try_recv() {
-                Ok(event) => match event {
-                    MouseEvent::LeftPressed => match self.mouse_state {
-                        MouseState::Left | MouseState::None => {
-                            self.mouse_state = MouseState::Left;
-                        }
-                        MouseState::Right | MouseState::Both => {
-                            self.mouse_state = MouseState::Both;
-                        }
-                    },
-                    MouseEvent::RightPressed => match self.mouse_state {
-                        MouseState::Left | MouseState::Both => {
-                            self.mouse_state = MouseState::Both;
-                        }
-                        MouseState::Right | MouseState::None => {
-                            self.mouse_state = MouseState::Right;
-                        }
-                    },
-                    MouseEvent::LeftReleased => match self.mouse_state {
-                        MouseState::Left | MouseState::None => {
-                            self.mouse_state = MouseState::None;
-                        }
-                        MouseState::Right | MouseState::Both => {
-                            self.mouse_state = MouseState::Right;
-                        }
-                    },
-                    MouseEvent::RightReleased => match self.mouse_state {
-                        MouseState::Left | MouseState::Both => {
-                            self.mouse_state = MouseState::Left;
-                        }
-                        MouseState::Right | MouseState::None => {
-                            self.mouse_state = MouseState::None;
-                        }
-                    },
-                    _ => {}
-                },
-                Err(err) => {
-                    if err == TryRecvError::Disconnected {
-                        warn!("Mouse input channel disconnected!");
-                    }
-                    break;
-                }
-            }
-        }
-        self.mouse_state
-    }
-
-    pub fn draw(&mut self, hand_pos: Vector2f, window: &mut RenderWindow) {
-        let state = self.get_mouse_state();
+    pub fn draw(
+        &mut self,
+        hand_pos: Vector2f,
+        window: &mut RenderWindow,
+        mouse: &DeviceViewModelImpl,
+    ) {
+        let state = mouse.button_state().into();
         let mut device = self.setup_device(&state);
         device.set_position(hand_pos);
         window.draw(&device)
