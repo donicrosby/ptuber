@@ -10,5 +10,4 @@ mod windows;
 pub(crate) use self::keyboard::Keyboard;
 pub(crate) use self::mouse::MouseModel;
 pub(crate) use self::traits::{DeviceModel, KeyboardModel};
-pub(crate) use self::types::DeviceButton;
-pub(crate) use self::types::PressedKeyMap;
+pub(crate) use self::types::{DeviceButton, PressedKeyMap, DeviceType, GamepadMouseStick, ButtonOrKey};

@@ -1,6 +1,32 @@
 use std::collections::HashSet;
 use std::hash::Hash;
 
+use device_query::Keycode;
+use crate::ButtonType;
+
+#[derive(Debug, Clone, Copy)]
+pub enum DeviceType {
+    Mouse,
+    GamePad
+}
+
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+pub enum ButtonOrKey {
+    Key(Keycode),
+    Button(ButtonType)
+}
+
+pub enum GamepadMouseStick {
+    Left,
+    Right
+}
+
+impl Default for DeviceType {
+    fn default() -> Self {
+        Self::Mouse
+    }
+}
+
 #[derive(Eq, Hash, PartialEq, Debug, Clone, Copy)]
 pub enum DeviceButton {
     Left,

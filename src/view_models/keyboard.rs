@@ -1,5 +1,5 @@
 use crate::models::KeyboardModel;
-use device_query::Keycode;
+use crate::ButtonOrKey;
 
 use super::{Keyboard, KeyboardState, KeysViewModel};
 
@@ -17,13 +17,13 @@ impl KeyboardViewModel {
 }
 
 impl KeysViewModel for KeyboardViewModel {
-    type Key = Keycode;
+    type Key = ButtonOrKey;
     type KeyboardState = KeyboardState;
 
-    fn key_pressed(&mut self, key: &Keycode) {
+    fn key_pressed(&mut self, key: &ButtonOrKey) {
         self.model.key_pressed(key);
     }
-    fn key_released(&mut self, key: &Keycode) {
+    fn key_released(&mut self, key: &ButtonOrKey) {
         self.model.key_released(key);
     }
 
@@ -43,14 +43,15 @@ impl KeysViewModel for KeyboardViewModel {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use device_query::Keycode;
 
     #[test]
     fn test_keyboard_state() {
         let mut keyboard = KeyboardViewModel::new();
-        let a_key = Keycode::A;
-        let b_key = Keycode::B;
-        let c_key = Keycode::C;
-        let d_key = Keycode::D;
+        let a_key = ButtonOrKey::Key(Keycode::A);
+        let b_key = ButtonOrKey::Key(Keycode::B);
+        let c_key = ButtonOrKey::Key(Keycode::C);
+        let d_key = ButtonOrKey::Key(Keycode::D);
 
         let up = KeyboardState::Up;
         assert_eq!(up, keyboard.keyboard_state());
