@@ -10,7 +10,7 @@ use std::io::BufWriter;
 use std::path::{Path, PathBuf};
 use toml;
 
-use crate::{default_config, default_skin_dir};
+use crate::{default_config, default_skin_dir, GamepadMouseStick};
 use sfml::graphics::Color as SfmlColor;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -21,6 +21,7 @@ pub struct Config {
     pub images_path: PathBuf,
     pub debug: bool,
     pub avatar_below_arm: bool,
+    pub gamepad: GamepadSettings,
     pub window: WindowDimensions,
     pub background: Color,
     #[serde(with = "VectorDef")]
@@ -91,6 +92,7 @@ impl Default for Config {
         let anchors = Default::default();
         let mouse_mark = Default::default();
         let mouse_scale = Vector2::new(1.into(), 1.into());
+        let gamepad = Default::default();
         Self {
             config_path,
             images_path,
@@ -101,7 +103,24 @@ impl Default for Config {
             anchors,
             mouse_mark,
             mouse_scale,
+            gamepad
         }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct GamepadSettings {
+    pub enabled: bool,
+    pub gamepad_id: usize,
+    pub mouse_move_joystick: GamepadMouseStick,
+}
+
+impl Default for GamepadSettings {
+    fn default() -> Self {
+        let enabled = true;
+        let gamepad_id = 0;
+        let mouse_move_joystick = Default::default();
+        Self { enabled, gamepad_id, mouse_move_joystick}
     }
 }
 

@@ -6,12 +6,14 @@ mod types;
 use std::sync::{Arc, Mutex};
 
 use sfml::system::Vector2f;
+use log::debug;
 
 use self::keyboard::KeyboardViewModel;
+use crate::ButtonOrKey;
 use self::mouse::MouseViewModel;
 pub(crate) use self::traits::{DeviceViewModel, KeysViewModel};
 pub(crate) use self::types::{KeyboardState, MouseButtonState};
-use super::{DeviceButton, DeviceEvent, Keyboard, KeyboardEvent, MouseModel};
+use super::{DeviceButton, DeviceEvent, Keyboard, KeyboardEvent, MouseModel, DeviceType};
 
 pub struct DeviceViewModelImpl {
     view_model: Arc<Mutex<MouseViewModel>>,
@@ -44,7 +46,23 @@ impl DeviceViewModelImpl {
             match event {
                 DeviceEvent::ButtonPressed(b) => view_model.button_pressed(b),
                 DeviceEvent::ButtonReleased(b) => view_model.button_released(b),
-                DeviceEvent::MouseMoved(pos) => view_model.set_position(pos),
+                DeviceEvent::MouseMoved(pos) => {
+                    debug!("Mouse moved to {:?}", pos);
+                    view_model.set_position(pos)
+                },
+                DeviceEvent::AxisXMoved(x_pos) => {
+                    debug!("X Axis moved to {:?}", x_pos);
+                    let mut cur_pos = view_model.position();
+                    cur_pos.x = *x_pos;
+                    view_model.set_position(&cur_pos);
+                },
+                DeviceEvent::AxisYMoved(y_pos) => {
+                    debug!("Y Axis moved to {:?}", y_pos);
+                    let mut cur_pos = view_model.position();
+                    cur_pos.y = *y_pos;
+                    view_model.set_position(&cur_pos);
+                },
+                DeviceEvent::DeviceChanged(dev) => view_model.set_device_type(dev)
             }
         }
     }
@@ -71,8 +89,10 @@ impl KeyboardViewModelImpl {
     pub fn handle_event(&self, event: &KeyboardEvent) {
         if let Ok(mut view_model) = self.view_model.lock() {
             match event {
-                KeyboardEvent::KeyPressed(k) => view_model.key_pressed(k),
-                KeyboardEvent::KeyReleased(k) => view_model.key_released(k),
+                KeyboardEvent::KeyPressed(k) => view_model.key_pressed(&ButtonOrKey::Key(*k)),
+                KeyboardEvent::KeyReleased(k) => view_model.key_released(&ButtonOrKey::Key(*k)),
+                KeyboardEvent::ButtonPressed(b) => view_model.key_pressed(&ButtonOrKey::Button(b.clone())),
+                KeyboardEvent::ButtonReleased(b) => view_model.key_released(&ButtonOrKey::Button(b.clone()))
             }
         }
     }

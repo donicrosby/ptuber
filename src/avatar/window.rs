@@ -99,6 +99,7 @@ impl<'a> PtuberWindow<'a> {
             if reload_config {
                 let old_config = self.avatar.config();
                 let new_config = Config::new(&old_config.config_path, &old_config.images_path);
+                events.update_config(&new_config);
                 background_color = new_config.background.clone();
                 self.avatar.update_config(new_config)?;
                 reload_config = false;

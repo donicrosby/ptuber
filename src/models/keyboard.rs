@@ -1,22 +1,20 @@
-use device_query::Keycode;
-
-use super::{KeyboardModel, PressedKeyMap};
+use super::{KeyboardModel, PressedKeyMap, ButtonOrKey};
 
 #[derive(Debug, Clone, Default)]
 pub struct Keyboard {
-    keys: PressedKeyMap<Keycode>,
+    keys: PressedKeyMap<ButtonOrKey>,
 }
 
 impl KeyboardModel for Keyboard {
-    type Key = Keycode;
+    type Key = ButtonOrKey;
 
-    fn keys_pressed(&self) -> Vec<Keycode> {
+    fn keys_pressed(&self) -> Vec<ButtonOrKey> {
         self.keys.pressed_keys()
     }
-    fn key_pressed(&mut self, key: &Keycode) {
+    fn key_pressed(&mut self, key: &ButtonOrKey) {
         self.keys.key_pressed(key);
     }
-    fn key_released(&mut self, key: &Keycode) {
+    fn key_released(&mut self, key: &ButtonOrKey) {
         self.keys.key_released(key);
     }
 }

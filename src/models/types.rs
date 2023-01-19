@@ -1,5 +1,49 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, str::FromStr};
 use std::hash::Hash;
+
+use device_query::Keycode;
+use gilrs::Button;
+use strum_macros::EnumString;
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Copy)]
+pub enum DeviceType {
+    Mouse,
+    GamePad
+}
+
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+pub enum ButtonOrKey {
+    Key(Keycode),
+    Button(Button)
+}
+
+#[derive(Debug, EnumString, Clone, Copy, Serialize, Deserialize)]
+#[serde(from = "String")]
+pub enum GamepadMouseStick {
+    #[strum(ascii_case_insensitive)]
+    Left,
+    #[strum(ascii_case_insensitive)]
+    Right
+}
+
+impl Default for GamepadMouseStick {
+    fn default() -> Self {
+        Self::Left
+    }
+}
+
+impl From<String> for GamepadMouseStick {
+    fn from(value: String) -> Self {
+        GamepadMouseStick::from_str(&value).unwrap_or_default()
+    }
+}
+
+impl Default for DeviceType {
+    fn default() -> Self {
+        Self::Mouse
+    }
+}
 
 #[derive(Eq, Hash, PartialEq, Debug, Clone, Copy)]
 pub enum DeviceButton {

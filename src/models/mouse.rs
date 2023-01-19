@@ -1,11 +1,11 @@
 use sfml::system::Vector2f;
-use super::{DeviceButton, DeviceModel, PressedKeyMap};
-
+use super::{DeviceButton, DeviceModel, PressedKeyMap, DeviceType};
 
 #[derive(Debug, Clone, Default)]
 pub struct MouseModel {
     position: Vector2f,
     buttons: PressedKeyMap<DeviceButton>,
+    device_type: DeviceType,
 }
 
 impl MouseModel {
@@ -21,6 +21,7 @@ impl MouseModel {
 impl DeviceModel for MouseModel {
     type Button = DeviceButton;
     type Position = Vector2f;
+    type DeviceType =  DeviceType;
     
     fn position(&self) -> Vector2f {
         self.position
@@ -28,6 +29,14 @@ impl DeviceModel for MouseModel {
 
     fn set_position(&mut self, pos: &Vector2f) {
         self.position = *pos;
+    }
+
+    fn device_type(&self) -> DeviceType {
+        self.device_type
+    }
+
+    fn set_device_type(&mut self, device_type: &DeviceType) {
+        self.device_type = *device_type;
     }
 
     fn buttons_pressed(&self) -> Vec<DeviceButton> {

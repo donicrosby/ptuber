@@ -1,7 +1,7 @@
 use crate::models::DeviceModel;
 use sfml::system::Vector2f;
 
-use super::{DeviceButton, DeviceViewModel, MouseButtonState, MouseModel};
+use super::{DeviceButton, DeviceViewModel, MouseButtonState, MouseModel, DeviceType};
 
 #[derive(Debug, Clone, Default)]
 pub struct MouseViewModel {
@@ -21,12 +21,21 @@ impl DeviceViewModel for MouseViewModel {
     type Button = DeviceButton;
     type ButtonState = MouseButtonState;
     type Position = Vector2f;
+    type DeviceType = DeviceType;
 
     fn position(&self) -> Vector2f {
         self.model.position()
     }
     fn set_position(&mut self, pos: &Vector2f) {
         self.model.set_position(pos)
+    }
+
+    fn device_type(&self) -> DeviceType {
+        self.model.device_type()
+    }
+
+    fn set_device_type(&mut self, device_type: &DeviceType) {
+        self.model.set_device_type(device_type);
     }
 
     fn button_pressed(&mut self, button: &DeviceButton) {

@@ -1,6 +1,7 @@
 use clap::Parser;
 use log::debug;
 use std::sync::Arc;
+use std::time::Duration;
 
 pub mod args;
 mod avatar;
@@ -16,21 +17,22 @@ use self::user_input::{DeviceEvent, KeyboardEvent, UserInputMonitor, UtilError};
 use self::view_models::{
     DeviceViewModelImpl, KeyboardState, KeyboardViewModelImpl, MouseButtonState,
 };
-use models::{Keyboard, MouseModel};
+use models::{Keyboard, MouseModel, ButtonOrKey};
 
-use self::models::DeviceButton;
+use self::models::{DeviceButton, DeviceType, GamepadMouseStick};
 
 pub(crate) use self::args::{default_config, default_skin_dir};
 pub(crate) use self::args::{DEFAULT_CONFIG_NAME, DEFAULT_SKIN_DIR_NAME};
 pub use self::errors::PTuberError;
 pub use self::errors::Result as PtuberResult;
-pub(crate) use self::os_ui::{get_window_finder, WindowFinderError, WindowFinderImpl};
+pub(crate) use self::os_ui::{get_window_finder, WindowFinderError, WindowFinderImpl, WindowFinder};
 
 use self::args::Args;
 use self::avatar::PtuberWindow;
 use self::config::Config;
 
 pub const MAX_FRAMERATE: u32 = 60;
+pub const GAMEPAD_POLL_DURATION: Duration = Duration::from_millis(200);
 
 pub struct PTuber<'a> {
     config: Config,
@@ -43,8 +45,16 @@ impl<'a> PTuber<'a> {
         let args = Self::parse_args();
         debug!("Skin path: {:?}", args.skin_dir());
         debug!("Config path: {:?}", args.config_path());
-        let user_input_monitor = UserInputMonitor::new();
+        let mut joystick = None;
+        let mut mouse_stick = GamepadMouseStick::Left;
+        
+        
         let config = Config::new(&args.config_path(), &args.skin_dir());
+        if config.gamepad.enabled {
+            joystick = Some(config.gamepad.gamepad_id);
+            mouse_stick = config.gamepad.mouse_move_joystick;
+        }
+        let user_input_monitor  = UserInputMonitor::new(joystick, mouse_stick);
         let display = PtuberWindow::new(&args.skin_dir(), config.clone())?;
         Ok(Self {
             config,
