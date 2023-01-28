@@ -65,7 +65,7 @@ impl<'a> Device<'a> {
     pub fn update_config(&mut self, config: &Config) -> Result<()> {
         self.mouse_scale = config.mouse_scale.into_other();
         self.mouse_rotation = config.mouse_mark.rotation.into();
-        self.textures.reload_textures(&config.images_path)?;
+        //self.textures.reload_textures(&config.images_path)?;
         self.mouse_mark = Self::setup_debug(config);
         Ok(())
     }

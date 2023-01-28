@@ -26,7 +26,7 @@ impl<'a> Avatar<'a> {
     }
 
     pub fn update_config(&mut self, config: Config) -> Result<()> {
-        self.textures.reload_textures(&config.images_path)?;
+        //self.textures.reload_textures(&config.images_path)?;
         self.arms.update_config(&config)?;
         self.config = config;
         Ok(())

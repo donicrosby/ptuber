@@ -1,39 +1,27 @@
-use cfg_if::cfg_if;
-use log::error;
-use ptuber::{PTuber, PtuberResult as Result};
-#[cfg(windows)]
-use windows::Win32::System::Console::{AttachConsole, FreeConsole, ATTACH_PARENT_PROCESS};
+use bevy::prelude::*;
+use bevy::window::PresentMode;
+use ptuber::{PTuberPlugin, WINDOW_DIMENTIONS};
 
-cfg_if! {
-    if #[cfg(windows)] {
-        fn attach_to_console() {
-            unsafe {
-                FreeConsole();
-                AttachConsole(ATTACH_PARENT_PROCESS);
-            }
-        }
-    }
-
-}
-
-fn main() -> Result<()> {
-    cfg_if::cfg_if! {
-        if #[cfg(windows)] {
-            attach_to_console();
-        }
-    }
-    env_logger::init();
-    match PTuber::new() {
-        Ok(mut ptuber) => {
-            ptuber.start_ptuber().map_err(|err| {
-                error!("Got Error (Run): {:?}", err);
-                err
-            })?;
-            Ok(())
-        }
-        Err(err) => {
-            error!("Got Error: {:?}", err);
-            Err(err)
-        }
-    }
+fn main() {
+    App::new()
+        .insert_resource(ClearColor(Color::rgb(0.04, 0.04, 0.04)))
+        .add_plugins(
+            DefaultPlugins
+                .set(AssetPlugin {
+                    watch_for_changes: true,
+                    ..Default::default()
+                })
+                .set(WindowPlugin {
+                    window: WindowDescriptor {
+                        title: "PTuber Rigger!".to_string(),
+                        width: WINDOW_DIMENTIONS.0,
+                        height: WINDOW_DIMENTIONS.1,
+                        resizable: false,
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                }),
+        )
+        .add_plugin(PTuberPlugin)
+        .run();
 }

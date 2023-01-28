@@ -1,3 +1,4 @@
+use bevy::{prelude::*, reflect::TypeUuid};
 use either::Either;
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
@@ -7,20 +8,21 @@ use std::fs::OpenOptions;
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::io::BufWriter;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use toml;
 
-use crate::{default_config, default_skin_dir};
+use crate::GamepadMouseStick;
 use sfml::graphics::Color as SfmlColor;
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Resource, Default, Clone)]
+pub struct ConfigHandle(pub Handle<Config>);
+
+#[derive(Serialize, Deserialize, Clone, Debug, TypeUuid)]
+#[uuid = "c7675f2c-ed84-43e6-80a0-ca14afc1d5fc"]
 pub struct Config {
-    #[serde(skip)]
-    pub config_path: PathBuf,
-    #[serde(skip)]
-    pub images_path: PathBuf,
     pub debug: bool,
     pub avatar_below_arm: bool,
+    pub gamepad: GamepadSettings,
     pub window: WindowDimensions,
     pub background: Color,
     #[serde(with = "VectorDef")]
@@ -32,11 +34,6 @@ pub struct Config {
 impl Config {
     pub fn new(config_path: &Path, images_path: &Path) -> Self {
         Self::load_config_from_file(config_path, images_path)
-    }
-
-    fn set_paths_in_config(config: &mut Self, config_path: &Path, images_path: &Path) {
-        config.config_path = PathBuf::from(config_path);
-        config.images_path = PathBuf::from(images_path);
     }
 
     fn load_config_from_file(config_path: &Path, images_path: &Path) -> Self {
@@ -57,7 +54,6 @@ impl Config {
                     let mut default = Self {
                         ..Default::default()
                     };
-                    Self::set_paths_in_config(&mut default, config_path, images_path);
                     let mut config_writer = BufWriter::new(&file);
                     let _bytes_written = config_writer
                         .write(toml::to_string(&default).unwrap().as_bytes())
@@ -67,13 +63,11 @@ impl Config {
                     let mut config = toml::from_str(&config_string)
                         .map_err(|_err| warn!("Could not parse config, using defaults..."))
                         .unwrap_or_default();
-                    Self::set_paths_in_config(&mut config, config_path, images_path);
                     config
                 }
             }
             Err(_err) => {
                 let mut default = Default::default();
-                Self::set_paths_in_config(&mut default, config_path, images_path);
                 default
             }
         }
@@ -82,8 +76,6 @@ impl Config {
 
 impl Default for Config {
     fn default() -> Self {
-        let images_path = PathBuf::from(default_skin_dir());
-        let config_path = PathBuf::from(default_config());
         let window = Default::default();
         let background = Default::default();
         let debug = false;
@@ -91,9 +83,8 @@ impl Default for Config {
         let anchors = Default::default();
         let mouse_mark = Default::default();
         let mouse_scale = Vector2::new(1.into(), 1.into());
+        let gamepad = Default::default();
         Self {
-            config_path,
-            images_path,
             window,
             background,
             debug,
@@ -101,6 +92,27 @@ impl Default for Config {
             anchors,
             mouse_mark,
             mouse_scale,
+            gamepad,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct GamepadSettings {
+    pub enabled: bool,
+    pub gamepad_id: usize,
+    pub mouse_move_joystick: GamepadMouseStick,
+}
+
+impl Default for GamepadSettings {
+    fn default() -> Self {
+        let enabled = true;
+        let gamepad_id = 0;
+        let mouse_move_joystick = Default::default();
+        Self {
+            enabled,
+            gamepad_id,
+            mouse_move_joystick,
         }
     }
 }

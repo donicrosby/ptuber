@@ -1,25 +1,24 @@
 use device_query::{DeviceQuery, DeviceState, Keycode};
+use gilrs::{Axis, Event, EventType, Gilrs};
+use log::debug;
 use sfml::system::Vector2f;
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
-use log::{debug, warn, trace};
-use sfml::window::joystick;
-use std::time::{Duration, Instant};
 
-use super::{CallbackGuard, DeviceEvent, KeyboardEvent, Notifier, UtilError, GamePad, GampadDB, SFMLJoystick, JoystickEvent, AxisType, MAX_AXIS_VAL};
+use super::{CallbackGuard, DeviceEvent, KeyboardEvent, Notifier, UtilError, MAX_AXIS_VAL};
 use crate::models::DeviceType;
-use crate::{get_window_finder, WindowFinderImpl, WindowFinder, GamepadMouseStick};
+use crate::Config;
+use crate::{get_window_finder, GamepadMouseStick, WindowFinder, WindowFinderImpl};
 
 pub struct UserInputMonitor {
     notifiers: Arc<Mutex<Notifiers>>,
     window_finder: WindowFinderImpl,
     device_state: DeviceState,
     mouse_stick: GamepadMouseStick,
-    gamepad: Option<GamePad>,
+    gilrs: Option<Gilrs>,
     prev_keys: HashSet<Keycode>,
-    gamepad_poll: Duration,
-    last_check_time: Instant,
-    last_mouse_pos: Vector2f
+    joystick: Option<usize>,
+    last_mouse_pos: Vector2f,
 }
 
 struct Notifiers {
@@ -57,52 +56,23 @@ impl Notifiers {
 }
 
 impl UserInputMonitor {
-    pub fn new(joystick_id: u32, gamepad_poll: Duration, mouse_stick: GamepadMouseStick) -> Self {
+    pub fn new(joystick_id: Option<usize>, mouse_stick: GamepadMouseStick) -> Self {
         let notifiers = Arc::new(Mutex::new(Notifiers::new()));
         let window_finder = get_window_finder().expect("Could not get window finder");
         let device_state = DeviceState::new();
         let prev_keys = HashSet::new();
-        let gamepad = Self::get_updated_gamepad(joystick_id);
-        let last_check_time = Instant::now();
+        let gilrs = Gilrs::new().ok();
+        let joystick = joystick_id;
         let last_mouse_pos = Vector2f::new(0.0, 0.0);
         Self {
             notifiers,
             window_finder,
             device_state,
             prev_keys,
-            gamepad,
-            gamepad_poll,
-            last_check_time,
             mouse_stick,
+            gilrs,
+            joystick,
             last_mouse_pos,
-        }
-    }
-
-    fn get_updated_gamepad(id: u32) -> Option<GamePad> {
-        if let Some(info) = SFMLJoystick::new(id) {
-            // Found a connected joystick
-            debug!("Updating active gamepad config to use ID {}...", id);
-            if let Some(sdl_db) = GampadDB::get("gamecontrollerdb.txt") {
-                debug!("Found controller DB!");
-                if let Ok(db_str ) = std::str::from_utf8(sdl_db.data.as_ref()) {
-                    if let Some(found_gp) = GamePad::from_gamepad_db(info.id, info.vendor, info.product, db_str) {
-                        debug!("Found gamepad! id: {}, name: {}, vendor: {:#x}, product: {:#x}", found_gp.id(), found_gp.name(), found_gp.vendor_id(), found_gp.product_id());
-                        Some(found_gp)
-                    } else {
-                        warn!("Could not find controller in Gamepad DB!");
-                        None
-                    }
-                } else {
-                    warn!("Could not parse embedded Gamepad DB!");
-                    None
-                }
-            } else {
-                warn!("Could not fetch embedded Gamepad DB!");
-                None
-            }
-        } else {
-            trace!("Gamepad {} not found!", id);
-            None
         }
     }
 
@@ -155,76 +125,65 @@ impl UserInputMonitor {
         events
     }
 
-    fn check_if_joystick_is_connected(&mut self) {
-        if let Some(gp) = self.gamepad.as_ref() {
-            if !joystick::is_connected(gp.id()) {
-                debug!("Gamepad {} ({}) disconnected! Searching for updated Gamepad!", gp.id(), gp.name());
-                if let Some(mut updated_gp) = Self::get_updated_gamepad(gp.id()) {
-                    debug!("Found new Gamepad {} ({})!", updated_gp.id(), updated_gp.name());
-                    updated_gp.update_state();
-                    self.gamepad = Some(updated_gp);
-                } else {
-                    debug!("Could not find a new Gamepad!");
-                    self.gamepad = None;
-                } 
-            }
+    pub fn update_config(&mut self, config: &Config) {
+        if config.gamepad.enabled {
+            self.joystick = Some(config.gamepad.gamepad_id);
         } else {
-            if self.last_check_time.elapsed() >= self.gamepad_poll {
-                for id in 0..joystick::COUNT {
-                    if let Some(mut new_gp) = Self::get_updated_gamepad(id) {
-                        debug!("Gamepad {} ({}) connected!", new_gp.id(), new_gp.name());
-                        new_gp.update_state();
-                        self.gamepad = Some(new_gp);
-                        break
-                    }
-                }
-                self.last_check_time = Instant::now();
-            }
+            self.joystick = None;
         }
+        self.mouse_stick = config.gamepad.mouse_move_joystick;
     }
 
-    fn get_gamepad_events(gamepad: &mut GamePad, mouse_stick: &GamepadMouseStick) -> (Vec<DeviceEvent>, Vec<KeyboardEvent>){
-        gamepad.update_state();
+    fn get_gamepad_events(
+        gilrs: &mut Gilrs,
+        joystick_id: usize,
+        mouse_stick: &GamepadMouseStick,
+    ) -> (Vec<DeviceEvent>, Vec<KeyboardEvent>) {
         let mut device_events = Vec::new();
         let mut keyboard_events = Vec::new();
-        for event in gamepad.get_events() {
-            match event {
-                JoystickEvent::Axis(axis_event) => {
-                    debug!("Axis {:?} updated to {}", axis_event.event_type(), axis_event.state());
-                    match mouse_stick {
-                        GamepadMouseStick::Left => {
-                            if *axis_event.event_type() == AxisType::LeftX {
-                                let pos = (*axis_event.state() + MAX_AXIS_VAL) / (MAX_AXIS_VAL * 2.0); // Double the size to account for negatives
-                                device_events.push(DeviceEvent::AxisXMoved(pos));
-                            } else if *axis_event.event_type() == AxisType::LeftY {
-                                let pos = (*axis_event.state() + MAX_AXIS_VAL) / (MAX_AXIS_VAL * 2.0); // Double the size to account for negatives
-                                device_events.push(DeviceEvent::AxisYMoved(pos));
+        while let Some(Event { id, event, .. }) = gilrs.next_event() {
+            if joystick_id == 0 {
+                match event {
+                    EventType::ButtonPressed(button, _code) => {
+                        debug!("Gamepad {} button pressed {:?}", joystick_id, button);
+                        keyboard_events.push(KeyboardEvent::ButtonPressed(button));
+                    }
+                    EventType::ButtonReleased(button, _code) => {
+                        debug!("Gamepad {} button released {:?}", joystick_id, button);
+                        keyboard_events.push(KeyboardEvent::ButtonReleased(button));
+                    }
+                    EventType::AxisChanged(axis, pos, _code) => {
+                        match mouse_stick {
+                            GamepadMouseStick::Left => {
+                                if axis == Axis::LeftStickX {
+                                    let pos = (pos + MAX_AXIS_VAL) / (MAX_AXIS_VAL * 2.0); // Double the size to account for negatives
+                                    debug!("Gamepad {} mouse X moved {:?}", joystick_id, pos);
+                                    device_events.push(DeviceEvent::AxisXMoved(pos));
+                                } else if axis == Axis::LeftStickY {
+                                    debug!("Gamepad {} mouse Y moved {:?}", joystick_id, pos);
+                                    let pos = (pos + MAX_AXIS_VAL) / (MAX_AXIS_VAL * 2.0); // Double the size to account for negatives
+                                    device_events.push(DeviceEvent::AxisYMoved(pos));
+                                }
                             }
-                        },
-                        GamepadMouseStick::Right => {
-                            if *axis_event.event_type() == AxisType::RightX {
-                                let pos = (*axis_event.state() + MAX_AXIS_VAL) / (MAX_AXIS_VAL * 2.0); // Double the size to account for negatives
-                                device_events.push(DeviceEvent::AxisXMoved(pos));
-                            } else if *axis_event.event_type() == AxisType::RightY {
-                                let pos = (*axis_event.state() + MAX_AXIS_VAL) / (MAX_AXIS_VAL * 2.0); // Double the size to account for negatives
-                                device_events.push(DeviceEvent::AxisYMoved(pos));
+                            GamepadMouseStick::Right => {
+                                if axis == Axis::RightStickX {
+                                    let pos = (pos + MAX_AXIS_VAL) / (MAX_AXIS_VAL * 2.0); // Double the size to account for negatives
+                                    debug!("Gamepad {} mouse X moved {:?}", joystick_id, pos);
+                                    device_events.push(DeviceEvent::AxisXMoved(pos));
+                                } else if axis == Axis::RightStickY {
+                                    let pos = (pos + MAX_AXIS_VAL) / (MAX_AXIS_VAL * 2.0); // Double the size to account for negatives
+                                    debug!("Gamepad {} mouse Y moved {:?}", joystick_id, pos);
+                                    device_events.push(DeviceEvent::AxisYMoved(pos));
+                                }
                             }
                         }
                     }
-                },
-                JoystickEvent::Button(button_event) => {
-                    if *button_event.state() {
-                        keyboard_events.push(KeyboardEvent::ButtonPressed(button_event.event_type().clone()));
-                    } else {
-                        keyboard_events.push(KeyboardEvent::ButtonReleased(button_event.event_type().clone()));
-                    }
-                    
+                    _ => {}
                 }
             }
         }
         (device_events, keyboard_events)
     }
-
 
     pub fn get_events(&mut self) {
         let mut mouse_events = Vec::new();
@@ -234,17 +193,16 @@ impl UserInputMonitor {
         let mut raw_mouse_events;
         let mut raw_keyboard_events;
 
-        self.check_if_joystick_is_connected();
-        if let Some(gamepad) = self.gamepad.as_mut() {
-            (gamepad_device_events, gamepad_keyboard_events) = Self::get_gamepad_events(gamepad, &self.mouse_stick);
-        }
-
-        if !gamepad_device_events.is_empty() && !gamepad_keyboard_events.is_empty() {
-            mouse_events.push(DeviceEvent::DeviceChanged(DeviceType::GamePad));
+        if let (Some(gilrs), Some(joystick_id)) = (self.gilrs.as_mut(), self.joystick.as_ref()) {
+            (gamepad_device_events, gamepad_keyboard_events) =
+                Self::get_gamepad_events(gilrs, *joystick_id, &self.mouse_stick);
+            if !gamepad_device_events.is_empty() || !gamepad_keyboard_events.is_empty() {
+                mouse_events.push(DeviceEvent::DeviceChanged(DeviceType::GamePad));
+            }
         }
 
         raw_mouse_events = Self::get_mouse_events(&self.device_state);
-        
+
         if let Ok(pos) = self.window_finder.get_cursor_position() {
             if pos != self.last_mouse_pos {
                 raw_mouse_events.push(DeviceEvent::MouseMoved(pos));
@@ -257,13 +215,12 @@ impl UserInputMonitor {
         if !raw_mouse_events.is_empty() && !raw_keyboard_events.is_empty() {
             mouse_events.push(DeviceEvent::DeviceChanged(DeviceType::Mouse));
         }
-        
+
         mouse_events.append(&mut gamepad_device_events);
         mouse_events.append(&mut raw_mouse_events);
         keyboard_events.append(&mut gamepad_keyboard_events);
         keyboard_events.append(&mut raw_keyboard_events);
 
-        
         if let Ok(notifier) = self.notifiers.lock() {
             for event in mouse_events.into_iter() {
                 notifier.mouse_notifier.notify(&event);

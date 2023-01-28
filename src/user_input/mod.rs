@@ -2,15 +2,13 @@ mod drain_filter;
 mod errors;
 mod user_input_monitor;
 mod notifier;
-mod gamepad;
 
 use device_query::Keycode;
 use sfml::system::Vector2f;
+use gilrs::Button;
 
 use crate::models::DeviceType;
-use gamepad::{GamePad, GampadDB, SFMLJoystick, JoystickEvent, AxisType, MAX_AXIS_VAL};
-
-pub use self::gamepad::ButtonType;
+pub const MAX_AXIS_VAL: f32 = 1.0;
 
 pub use self::errors::UtilError;
 use super::DeviceButton;
@@ -28,8 +26,8 @@ pub enum DeviceEvent {
 pub enum KeyboardEvent {
     KeyPressed(Keycode),
     KeyReleased(Keycode),
-    ButtonPressed(ButtonType),
-    ButtonReleased(ButtonType)
+    ButtonPressed(Button),
+    ButtonReleased(Button)
 }
 
 pub use self::user_input_monitor::UserInputMonitor;

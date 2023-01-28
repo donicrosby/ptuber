@@ -75,7 +75,7 @@ impl<'a> Arms<'a> {
         let (anchor_mark, hand_mark) = Self::setup_debug(config);
         self.anchor_mark = anchor_mark;
         self.hand_mark = hand_mark;
-        self.textures.reload_textures(&config.images_path)?;
+        // self.textures.reload_textures(&config.images_path)?;
         self.device.update_config(config)?;
         Ok(())
     }
